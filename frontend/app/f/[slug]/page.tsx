@@ -8,6 +8,7 @@ export default function PublicForm() {
   const [n, setN] = useState(-1);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [err, setErr] = useState("");
+  const [visitorId] = useState(() => crypto.randomUUID());
   useEffect(() => {
     fetch(`${API}/public/${slug}`).then(async (r) =>
       r.ok ? setF(await r.json()) : setErr("This form is not available"),
@@ -43,7 +44,7 @@ export default function PublicForm() {
     return (
       <main
         className="public"
-        style={{ background: f.theme.background, color: f.theme.color }}
+        style={{ background: f.theme.darkMode ? "#1e1e20" : f.theme.background, color: f.theme.darkMode ? "#f7f7f4" : f.theme.color }}
       >
         <div className="welcome">
           <p className="brand">
@@ -61,7 +62,7 @@ export default function PublicForm() {
     return (
       <main
         className="public"
-        style={{ background: f.theme.background, color: f.theme.color }}
+        style={{ background: f.theme.darkMode ? "#1e1e20" : f.theme.background, color: f.theme.darkMode ? "#f7f7f4" : f.theme.color }}
       >
         <div className="welcome thanks">
           <div>✓</div>
@@ -72,8 +73,10 @@ export default function PublicForm() {
     );
   let q = f.questions[n];
   function set(v: string) {
-    setAnswers({ ...answers, [q.id]: v });
+    const nextAnswers = { ...answers, [q.id]: v };
+    setAnswers(nextAnswers);
     setErr("");
+    void fetch(`${API}/public/${slug}/partial`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ visitor_id: visitorId, answers: nextAnswers }) });
   }
   async function next() {
     let v = answers[q.id] || "";
@@ -89,14 +92,16 @@ export default function PublicForm() {
       setErr("Please enter a number.");
       return;
     }
-    if (n < f.questions.length - 1) {
-      setN(n + 1);
+    const jumpTo = q.logic?.option === v && q.logic?.target !== "" && q.logic?.target !== undefined ? Number(q.logic.target) : n + 1;
+    if (jumpTo < f.questions.length) {
+      setN(jumpTo);
       return;
     }
     const r = await fetch(`${API}/public/${slug}/responses`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        visitor_id: visitorId,
         answers: Object.entries(answers).map(([question_id, value]) => ({
           question_id: Number(question_id),
           value,
@@ -109,7 +114,7 @@ export default function PublicForm() {
   return (
     <main
       className="public"
-      style={{ background: f.theme.background, color: f.theme.color }}
+      style={{ background: f.theme.darkMode ? "#1e1e20" : f.theme.background, color: f.theme.darkMode ? "#f7f7f4" : f.theme.color }}
     >
       <div className="progress">
         <i style={{ width: `${((n + 1) / f.questions.length) * 100}%` }} />
@@ -127,7 +132,7 @@ export default function PublicForm() {
           {q.required && <sup>*</sup>}
         </h1>
         {q.description && <p>{q.description}</p>}
-        <QuestionInput q={q} value={answers[q.id] || ""} set={set} />
+        <QuestionInput q={q} value={answers[q.id] || ""} set={set} slug={slug} />
         {err && <div className="validation">{err}</div>}
         <button className="ok" onClick={next}>
           OK <kbd>↵</kbd>
@@ -141,11 +146,14 @@ function QuestionInput({
   q,
   value,
   set,
+  slug,
 }: {
   q: any;
   value: string;
   set: (x: string) => void;
+  slug: string;
 }) {
+  if (q.type === "file_upload") return <div className="upload"><input type="file" onChange={async e => { const file = e.target.files?.[0]; if (!file) return; const data = new FormData(); data.append("file", file); const response = await fetch(`${API}/public/${slug}/upload`, { method: "POST", body: data }); if (response.ok) { const uploaded = await response.json(); set(uploaded.url); } }} />{value && <p>✓ File attached</p>}</div>;
   if (q.type === "long_text")
     return (
       <textarea autoFocus value={value} onChange={(e) => set(e.target.value)} />

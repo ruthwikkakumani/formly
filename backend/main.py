@@ -2,12 +2,17 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from collections import Counter
 from uuid import uuid4
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response as FastAPIResponse
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
+import csv
+import io
 from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy.orm import Session, joinedload
 from database import Base, engine, SessionLocal
-from models import Form, Question, Response, Answer
+from models import Form, Question, Response, Answer, PartialResponse
 
 def db_session():
     db = SessionLocal()
@@ -15,14 +20,15 @@ def db_session():
     finally: db.close()
 
 class QuestionInput(BaseModel):
-    type: str = "short_text"; title: str = "Your question here"; description: str = ""; required: bool = False; options: list[str] = []
+    type: str = "short_text"; title: str = "Your question here"; description: str = ""; required: bool = False; options: list[str] = []; logic: dict = {}
 class FormInput(BaseModel):
     title: str = "Untitled form"; description: str = ""; theme: dict = {"color":"#262627","background":"#f7f7f4"}; questions: list[QuestionInput] = []
 class AnswerInput(BaseModel): question_id: int; value: str = ""
-class SubmitInput(BaseModel): answers: list[AnswerInput]
+class SubmitInput(BaseModel): answers: list[AnswerInput]; visitor_id: str | None = None
+class PartialInput(BaseModel): visitor_id: str; answers: dict[str, str]
 
 def form_data(form, include_responses=False):
-    return {"id":form.id,"title":form.title,"description":form.description,"status":form.status,"slug":form.slug,"theme":form.theme,"created_at":form.created_at,"response_count":len(form.responses),"questions":[{"id":q.id,"position":q.position,"type":q.type,"title":q.title,"description":q.description,"required":q.required,"options":q.options} for q in form.questions]}
+    return {"id":form.id,"title":form.title,"description":form.description,"status":form.status,"slug":form.slug,"theme":form.theme,"created_at":form.created_at,"response_count":len(form.responses),"questions":[{"id":q.id,"position":q.position,"type":q.type,"title":q.title,"description":q.description,"required":q.required,"options":q.options,"logic":q.logic} for q in form.questions]}
 
 def get_form(db, id):
     f=db.query(Form).options(joinedload(Form.questions),joinedload(Form.responses)).filter(Form.id==id).first()
@@ -32,6 +38,10 @@ def get_form(db, id):
 @asynccontextmanager
 async def lifespan(app):
     Base.metadata.create_all(engine)
+    with engine.begin() as conn:
+        columns = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(questions)")]
+        if "logic" not in columns: conn.exec_driver_sql("ALTER TABLE questions ADD COLUMN logic JSON DEFAULT '{}'")
+    Path("uploads").mkdir(exist_ok=True)
     db=SessionLocal()
     if not db.query(Form).first():
         f=Form(title="Product feedback",description="Help us make the next release better.",status="published",slug="product-feedback")
@@ -46,6 +56,8 @@ async def lifespan(app):
     db.close(); yield
 
 app=FastAPI(title="Formly API", lifespan=lifespan)
+Path("uploads").mkdir(exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.add_middleware(CORSMiddleware,allow_origins=["http://localhost:3000"],allow_credentials=True,allow_methods=["*"],allow_headers=["*"])
 
 @app.get("/api/forms")
@@ -69,7 +81,7 @@ def delete(id:int,db:Session=Depends(db_session)): db.delete(get_form(db,id)); d
 @app.post("/api/forms/{id}/duplicate")
 def duplicate(id:int,db:Session=Depends(db_session)):
     src=get_form(db,id); f=Form(title=src.title+" (copy)",description=src.description,slug=uuid4().hex[:10],theme=src.theme); db.add(f); db.flush()
-    for q in src.questions: db.add(Question(form_id=f.id,position=q.position,type=q.type,title=q.title,description=q.description,required=q.required,options=q.options))
+    for q in src.questions: db.add(Question(form_id=f.id,position=q.position,type=q.type,title=q.title,description=q.description,required=q.required,options=q.options,logic=q.logic))
     db.commit(); return form_data(get_form(db,f.id))
 @app.post("/api/forms/{id}/publish")
 def publish(id:int,db:Session=Depends(db_session)): f=get_form(db,id); f.status="published" if f.status=="draft" else "draft"; db.commit(); return form_data(f)
@@ -93,7 +105,23 @@ def submit(slug:str,data:SubmitInput,db:Session=Depends(db_session)):
     r=Response(form_id=f.id); db.add(r); db.flush()
     for q in f.questions:
         if incoming.get(q.id): db.add(Answer(response_id=r.id,question_id=q.id,value=incoming[q.id]))
+    if data.visitor_id: db.query(PartialResponse).filter(PartialResponse.visitor_id==data.visitor_id).delete()
     db.commit(); return {"id":r.id}
+@app.post("/api/public/{slug}/partial")
+def save_partial(slug:str,data:PartialInput,db:Session=Depends(db_session)):
+    f=db.query(Form).filter(Form.slug==slug,Form.status=="published").first()
+    if not f: raise HTTPException(404,"This form is not available")
+    item=db.query(PartialResponse).filter(PartialResponse.visitor_id==data.visitor_id).first()
+    if item: item.answers=data.answers
+    else: db.add(PartialResponse(form_id=f.id,visitor_id=data.visitor_id,answers=data.answers))
+    db.commit(); return {"ok":True}
+@app.post("/api/public/{slug}/upload")
+async def upload(slug:str,file:UploadFile=File(...),db:Session=Depends(db_session)):
+    if not db.query(Form).filter(Form.slug==slug,Form.status=="published").first(): raise HTTPException(404,"This form is not available")
+    safe_name=Path(file.filename or "upload").name
+    name=f"{uuid4().hex}-{safe_name}"
+    Path("uploads",name).write_bytes(await file.read())
+    return {"url":f"/uploads/{name}","name":safe_name}
 @app.get("/api/forms/{id}/responses")
 def responses(id:int,db:Session=Depends(db_session)):
     f=get_form(db,id); rs=db.query(Response).options(joinedload(Response.answers)).filter(Response.form_id==id).order_by(Response.submitted_at.desc()).all()
@@ -104,4 +132,13 @@ def stats(id:int,db:Session=Depends(db_session)):
     for q in f.questions:
         vals=[a.value for a in db.query(Answer).filter(Answer.question_id==q.id).all()]
         out.append({"question_id":q.id,"title":q.title,"responses":len(vals),"counts":dict(Counter(vals)) if q.type in ["multiple_choice","dropdown","yes_no","rating"] else {}})
-    return out
+    partials=db.query(PartialResponse).filter(PartialResponse.form_id==id).count()
+    completed=db.query(Response).filter(Response.form_id==id).count()
+    return {"questions":out,"completion":{"completed":completed,"in_progress":partials,"rate":round(completed/(completed+partials)*100) if completed+partials else 0}}
+@app.get("/api/forms/{id}/responses.csv")
+def export_csv(id:int,db:Session=Depends(db_session)):
+    f=get_form(db,id); rows=db.query(Response).options(joinedload(Response.answers)).filter(Response.form_id==id).order_by(Response.submitted_at.desc()).all()
+    output=io.StringIO(); writer=csv.writer(output); writer.writerow(["submitted_at",*[q.title for q in f.questions]])
+    for r in rows:
+        values={a.question_id:a.value for a in r.answers}; writer.writerow([r.submitted_at.isoformat(),*[values.get(q.id,"") for q in f.questions]])
+    return FastAPIResponse(output.getvalue(),media_type="text/csv",headers={"Content-Disposition":f'attachment; filename="form-{id}-responses.csv"'})

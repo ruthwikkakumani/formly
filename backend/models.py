@@ -26,6 +26,7 @@ class Question(Base):
     description: Mapped[str] = mapped_column(Text, default="")
     required: Mapped[bool] = mapped_column(Boolean, default=False)
     options: Mapped[list] = mapped_column(JSON, default=list)
+    logic: Mapped[dict] = mapped_column(JSON, default=dict)
     form: Mapped["Form"] = relationship(back_populates="questions")
     answers: Mapped[list["Answer"]] = relationship(back_populates="question", cascade="all, delete-orphan")
 
@@ -45,3 +46,11 @@ class Answer(Base):
     value: Mapped[str] = mapped_column(Text)
     response: Mapped["Response"] = relationship(back_populates="answers")
     question: Mapped["Question"] = relationship(back_populates="answers")
+
+class PartialResponse(Base):
+    __tablename__ = "partial_responses"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    form_id: Mapped[int] = mapped_column(ForeignKey("forms.id"))
+    visitor_id: Mapped[str] = mapped_column(String(64), unique=True)
+    answers: Mapped[dict] = mapped_column(JSON, default=dict)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
