@@ -153,7 +153,7 @@ function QuestionInput({
   set: (x: string) => void;
   slug: string;
 }) {
-  if (q.type === "file_upload") return <div className="upload"><input type="file" onChange={async e => { const file = e.target.files?.[0]; if (!file) return; const data = new FormData(); data.append("file", file); const response = await fetch(`${API}/public/${slug}/upload`, { method: "POST", body: data }); if (response.ok) { const uploaded = await response.json(); set(uploaded.url); } }} />{value && <p>✓ File attached</p>}</div>;
+  if (q.type === "file_upload") return <div className="upload"><input type="file" onChange={async e => { const file = e.target.files?.[0]; if (!file) return; const data = new FormData(); data.append("file", file); const response = await fetch(`${API}/public/${slug}/upload`, { method: "POST", body: data }); if (response.ok) { const uploaded = await response.json(); set(`${API.replace("/api", "")}${uploaded.url}`); } }} />{value && <p>✓ File attached</p>}</div>;
   if (q.type === "long_text")
     return (
       <textarea autoFocus value={value} onChange={(e) => set(e.target.value)} />

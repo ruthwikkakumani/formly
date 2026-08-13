@@ -30,6 +30,10 @@ Visit `http://localhost:3000`. The API docs are at `http://localhost:8000/docs`.
 
 For a hosted frontend, set `NEXT_PUBLIC_API_URL` to the deployed backend URL followed by `/api`, and add the frontend host to FastAPI CORS origins in `backend/main.py`.
 
+## Deployment
+
+The repository includes `backend/Dockerfile` for Render/Railway and `frontend/vercel.json` for Vercel. Deploy the API first, configure a persistent volume for `typeform.db` and `uploads/`, then deploy `frontend/` with `NEXT_PUBLIC_API_URL=https://your-api-host/api`. Publishing the repo and connecting deployment accounts are deliberately not performed by this local project.
+
 ## Features
 
 - Form CRUD: create, rename (inline), duplicate, delete, publish/unpublish and a copyable public share link
@@ -38,6 +42,7 @@ For a hosted frontend, set `NEXT_PUBLIC_API_URL` to the deployed backend URL fol
 - Results: persisted submissions, clickable individual-response detail modal, submission table and choice-question counts
 - Settings: editable text/background theme colors and thank-you copy; clearly labelled Coming Soon placeholders for advanced features
 - Fresh database seeding creates two published mixed-question forms with sample responses
+- Bonus features: logic jumps, theme customization, dark mode, CSV response export, partial-response tracking/completion rate, and file-upload questions
 
 ## Architecture
 
