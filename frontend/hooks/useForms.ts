@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { formsApi } from "@/lib/api";
+import { apiBase, formsApi } from "@/lib/api";
 import { createQuestion } from "@/lib/constants";
 import { FormDefinition } from "@/lib/types";
 import { useCurrentUser } from "./useCurrentUser";
@@ -11,12 +11,16 @@ import { useToast } from "./useToast";
 export function useForms() {
   const [forms, setForms] = useState<FormDefinition[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const { toast, showToast } = useToast();
   const { actor } = useCurrentUser();
 
   const load = useCallback(async () => {
     try {
       setForms(await formsApi.list());
+      setError("");
+    } catch {
+      setError(`Can't reach API at ${apiBase()}`);
     } finally {
       setLoading(false);
     }
@@ -67,6 +71,7 @@ export function useForms() {
   return {
     forms,
     loading,
+    error,
     toast,
     createForm,
     renameForm,

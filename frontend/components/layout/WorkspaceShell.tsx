@@ -8,7 +8,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export function WorkspaceShell({ children }: { children: ReactNode }) {
   const path = usePathname();
-  const { members, current, switchUser } = useCurrentUser();
+  const { members, current, error, switchUser } = useCurrentUser();
   const item = (href: string, label: string) => (
     <Link href={href} className={path === href || (href !== "/" && path.startsWith(href)) ? "navon" : ""}>
       {label}
@@ -31,14 +31,16 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             value={current?.email || ""}
             onChange={(event) => switchUser(event.target.value)}
             aria-label="Current teammate"
+            disabled={!members.length}
           >
+            {!members.length ? <option value="">No teammates loaded</option> : null}
             {members.map((member) => (
               <option value={member.email} key={member.id}>
                 {member.name} ({member.role})
               </option>
             ))}
           </select>
-          <p>Switch user to simulate two people editing.</p>
+          <p>{error || "Switch user to simulate two people editing."}</p>
         </div>
       </aside>
       <div className="workmain">{children}</div>

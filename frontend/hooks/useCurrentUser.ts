@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { teamApi } from "@/lib/api";
+import { apiBase, teamApi } from "@/lib/api";
 import { WorkspaceMember } from "@/lib/types";
 
 const KEY = "formly-current-user";
@@ -10,13 +10,20 @@ const KEY = "formly-current-user";
 export function useCurrentUser() {
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [current, setCurrent] = useState<WorkspaceMember>();
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    void teamApi.list().then((list) => {
-      setMembers(list);
-      const saved = sessionStorage.getItem(KEY);
-      setCurrent(list.find((member) => member.email === saved) || list[0]);
-    });
+    void teamApi
+      .list()
+      .then((list) => {
+        setMembers(list);
+        setError("");
+        const saved = sessionStorage.getItem(KEY);
+        setCurrent(list.find((member) => member.email === saved) || list[0]);
+      })
+      .catch(() => {
+        setError(`Can't reach API at ${apiBase()}`);
+      });
   }, []);
 
   function switchUser(email: string) {
@@ -29,6 +36,7 @@ export function useCurrentUser() {
   return {
     members,
     current,
+    error,
     switchUser,
     actor: {
       actor_name: current?.name || "",

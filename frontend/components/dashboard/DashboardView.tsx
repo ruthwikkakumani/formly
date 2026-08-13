@@ -27,6 +27,11 @@ export function DashboardView() {
         </div>
         {workspace.loading ? (
           <div className="empty">Loading your workspace…</div>
+        ) : workspace.error ? (
+          <EmptyState
+            title="Can't reach the API"
+            body={`${workspace.error}. On Railway set NEXT_PUBLIC_API_URL to https://formly-api.rdrt.dev/api and redeploy the frontend.`}
+          />
         ) : workspace.forms.length ? (
           <section className="formgrid">
             {workspace.forms.map((form) => (

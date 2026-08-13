@@ -6,7 +6,7 @@ declare global {
   }
 }
 
-function apiBase(): string {
+export function apiBase(): string {
   if (typeof window !== "undefined" && window.__FORMLY_API__) {
     return window.__FORMLY_API__.replace(/\/$/, "");
   }
