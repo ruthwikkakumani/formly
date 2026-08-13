@@ -62,6 +62,8 @@ classDiagram
     +str role
     +str status
     +datetime expires_at
+    +datetime accepted_at
+    +str email_error
   }
   class FormPresence {
     +int id
@@ -113,6 +115,7 @@ classDiagram
   }
   class CollaborationService {
     +heartbeat(db, form_id, name, email)
+    +leave(db, form_id, name, email)
     +active_editors(db, form_id)
     +log(db, form_id, action, name, email)
     +history(db, form_id)
@@ -148,6 +151,7 @@ classDiagram
 ```mermaid
 classDiagram
   class DashboardView
+  class TemplatesGallery
   class BuilderView
   class PublicFormView
   class TeamView
@@ -160,7 +164,9 @@ classDiagram
   class publicFormsApi
   class teamApi
   DashboardView --> useForms
+  DashboardView --> TemplatesGallery
   DashboardView --> useCurrentUser
+  TemplatesGallery --> useForms
   BuilderView --> useBuilder
   BuilderView --> ActivityLog
   PublicFormView --> useRespondent

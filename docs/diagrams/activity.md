@@ -4,7 +4,7 @@
 
 ```mermaid
 flowchart TD
-  A[Open workspace] --> B[Create or open form]
+  A[Open workspace] --> B[Create, use a template, or open form]
   B --> C[Edit title and questions]
   C --> D{Need another question?}
   D -->|Yes| E[Add type / drag reorder]
@@ -51,12 +51,14 @@ flowchart TD
   C[Open builder as member B] --> D[Heartbeat every 4s]
   B --> E[GET presence]
   D --> E
-  E --> F{Other last_seen < 20s?}
+  E --> F{Other last_seen < 8s?}
   F -->|Yes| G[Show "X editing"]
   F -->|No| H[Show Only you]
   B --> I[Poll GET form]
   I --> J{updated_at changed?}
   J -->|No| B
   J -->|Yes dirty local| K[Toast: teammate saved newer version]
-  J -->|Yes clean local| L[Apply remote form live]
+  J -->|Yes clean local| L[Apply saved remote form]
+  B --> M[Close or navigate away]
+  M --> N[DELETE /presence]
 ```

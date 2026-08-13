@@ -51,9 +51,9 @@ stateDiagram-v2
   [*] --> Offline
   Offline --> Active: POST /presence
   Active --> Active: heartbeat every 4s
-  Active --> Stale: no heartbeat for 20s
+  Active --> Stale: no heartbeat for 8s
   Stale --> [*]: row deleted
-  Active --> [*]: leave builder
+  Active --> [*]: DELETE /presence on leave
 ```
 
 ## Builder local draft vs remote

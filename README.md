@@ -2,15 +2,15 @@
 
 **GitHub (public):** [https://github.com/ruthwikkakumani/formly](https://github.com/ruthwikkakumani/formly)
 
-Formly clones Typeform’s workspace, builder, and conversational one-question-at-a-time fill flow. Creators build and publish forms; anyone with the link can respond without logging in. Results, themes, webhooks, team invites, live “who is editing”, save history, and bonus question types are included.
+Formly clones Typeform’s workspace, builder, and conversational one-question-at-a-time fill flow. Creators build and publish forms; anyone with the link can respond without logging in.
 
-The repository contains `frontend/` and `backend/` as required by the assignment. Seeded published forms load on first API start. Creators register at `/register`; public fill needs no login.
+The repository contains `frontend/` and `backend/` as required by the assignment. Seeded published forms load on first API start. The first person to register at `/register` becomes the workspace owner; later accounts join only by invite. Public fill (`/f/{slug}`) needs no login.
 
 ## Tech stack
 
 - **Frontend:** Next.js 15, React 19, TypeScript
 - **Backend:** FastAPI, SQLAlchemy 2, Pydantic
-- **Database:** SQLite file created on boot (`typeform.db`). Local: `backend/typeform.db`. Railway: `/data/typeform.db` on a volume. The Docker image does **not** bake in a database.
+- **Database:** SQLite file created on boot. Local: `backend/typeform.db`. Railway: `/data/typeform.db` on a volume (`DATABASE_URL=sqlite:////data/typeform.db` — four slashes). The Docker image does **not** bake in a database.
 
 ## Run locally
 
@@ -68,9 +68,9 @@ formly/
 │       └── api/routes/   auth, forms, public, team, invites, health
 └── frontend/
     ├── app/              /, /login, /register, /invite/[token], /builder/[id], /f/[slug], /team
-    ├── components/       dashboard, builder, results, settings, respondent, team
+    ├── components/       dashboard (incl. templates), builder, results, settings, respondent, team
     ├── hooks/            useForms, useBuilder, useRespondent, useCurrentUser
-    ├── lib/              api, types, validation
+    ├── lib/              api, types, validation, templates, errors
     └── styles/           per-surface CSS
 ```
 
@@ -118,7 +118,7 @@ Saving a form updates questions by id so historical answers are kept. Full colum
 - `GET/POST /api/forms` · `GET/PUT/PATCH/DELETE /api/forms/{id}`
 - `POST /api/forms/{id}/duplicate` · `POST /api/forms/{id}/publish`
 - `GET /api/forms/{id}/responses` · `GET /api/forms/{id}/stats` · `GET /api/forms/{id}/responses.csv`
-- `POST/GET /api/forms/{id}/presence` · `GET /api/forms/{id}/activity`
+- `POST/GET/DELETE /api/forms/{id}/presence` · `GET /api/forms/{id}/activity`
 - `GET /api/public/{slug}` · `POST /api/public/{slug}/responses|partial|upload`
 - `POST /api/auth/register` · `POST /api/auth/login` · `GET /api/auth/me`
 - `GET/POST /api/workspace/members` · `DELETE /api/workspace/members/{id}`
@@ -128,15 +128,29 @@ Saving a form updates questions by id so historical answers are kept. Full colum
 
 ## Features
 
-Builder, CRUD, publish/share, conversational fill (keyboard + progress + validation), results + CSV, themes (colors, fonts, background, dark mode), thank-you copy, logic jumps, file upload, payments, webhooks, workspace collaboration, **live who-is-editing + save history**, seeded published forms.
+Builder, CRUD, publish/share, conversational fill (keyboard + progress + validation), results + CSV, themes (colors, fonts, background, dark mode), thank-you copy, logic jumps, file upload, payments, webhooks, workspace collaboration, who-is-editing + save history, starter **templates**, seeded published forms.
+
+**Auth.** First `/register` creates the owner. After that, new people join only by accepting an invite. Public `/f/{slug}` stays open with no login.
+
+**Invites.** Team page sends an email and always shows a **copy link**. On Railway, Gmail SMTP (ports 587/465) is often blocked, so the email may not arrive — the invite is still created and the copy link works.
+
+**Presence.** Other signed-in editors appear in the builder. Leaving the page clears presence. This is not Google Docs live typing: you save, then other open builders poll and reload if their draft is clean.
+
+**Errors.** API and UI messages are situation-specific (auth, invites, publish, network). Hung requests abort after 8 seconds instead of spinning forever.
+
+## Assignment scope
+
+**Required:** `frontend/` + `backend/`, workspace + builder, publish + shareable public fill, conversational one-question flow, results.
+
+**Beyond the brief:** JWT auth (owner + invite-only teammates), email invites with copy-link fallback, live presence, save history, starter templates, professional errors, and the extra question types / themes / webhooks / logic jumps that make the product feel complete.
 
 ## Assumptions
 
 - Creators sign in with email/password. First register becomes owner; later people join only via invite accept. Public fill links stay open with no login.
 - Payments record a successful pay action in the response (no live Stripe keys).
 - Webhooks POST JSON on submit; a down endpoint does not fail the response.
-- Team invites send a real email with an accept link. The person is added only after they accept; ignore/revoke leaves them out.
-- Live collab uses presence heartbeats (not WebSockets). Identity is the signed-in account.
+- Team invites send a real email with an accept link when SMTP is reachable. The person is added only after they accept; ignore/revoke leaves them out. Copy link is the reliable fallback.
+- Presence uses heartbeats (not WebSockets). Identity is the signed-in account. Other builders see who is there and pick up **saved** changes — not character-by-character typing.
 
 ## Demo / deployment
 
@@ -145,7 +159,12 @@ Live demo: [https://formly.rdrt.dev](https://formly.rdrt.dev) · API: [https://f
 Docker Hub: `ruthwikkakumani/formly-frontend` and `ruthwikkakumani/formly-backend`.
 
 1. Railway: two services from those images. Mount a **volume at `/data`** on the backend (SQLite + uploads).
-2. Backend env: `CORS_ORIGINS=https://formly.rdrt.dev`, `FRONTEND_URL=https://formly.rdrt.dev`, `AUTH_SECRET=...`, plus SMTP or Resend for invite mail.
+2. Backend env (no quotes around values):
+   - `DATABASE_URL=sqlite:////data/typeform.db` (four slashes)
+   - `UPLOAD_DIR=/data/uploads`
+   - `CORS_ORIGINS=https://formly.rdrt.dev`
+   - `FRONTEND_URL=https://formly.rdrt.dev`
+   - `AUTH_SECRET=...` plus SMTP or Resend for invite mail
 3. Frontend env: `NEXT_PUBLIC_API_URL=https://formly-api.rdrt.dev/api`
 
 Public fill (no login): `/f/product-feedback`  

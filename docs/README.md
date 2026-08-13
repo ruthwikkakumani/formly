@@ -1,6 +1,6 @@
 # Formly — design documentation (LLD + UML)
 
-Interview / evaluation pack. Every diagram matches the code in `frontend/` and `backend/`.
+Interview / evaluation pack. Every diagram matches the code in `frontend/` and `backend/` (auth, invites, Railway volume, templates, presence leave).
 
 | Doc | What it covers |
 |---|---|

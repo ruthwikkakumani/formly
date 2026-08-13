@@ -20,7 +20,7 @@ formly/
 ├── backend/                       FastAPI + SQLite
 │   ├── main.py                    composition root (CORS, lifespan, seed, mounts)
 │   ├── requirements.txt
-│   ├── Dockerfile
+│   ├── Dockerfile                 DATABASE_URL=sqlite:////data/typeform.db
 │   ├── render.yaml
 │   ├── .env.example
 │   └── app/
@@ -67,7 +67,7 @@ formly/
 │           └── routes/
 │               ├── health.py
 │               ├── auth.py        register / login / me
-│               ├── forms.py       creator CRUD (auth required)
+│               ├── forms.py       creator CRUD + presence leave (auth required)
 │               ├── public.py      unauthenticated fill + upload
 │               ├── invites.py     send / preview / accept
 │               └── team.py        members
@@ -83,15 +83,15 @@ formly/
     │   └── f/[slug]/page.tsx      public fill (thin, no auth)
     ├── components/
     │   ├── layout/                WorkspaceShell, AppHeader
-    │   ├── dashboard/             form cards, rename modal
+    │   ├── dashboard/             form cards, rename modal, TemplatesGallery
     │   ├── builder/               canvas, list, settings, logic, ActivityLog
     │   ├── results/               table, modal, stats
     │   ├── settings/              theme, thank-you, webhook
     │   ├── respondent/            welcome, question, thank-you
-    │   ├── team/                  invite + member list
+    │   ├── team/                  invite + copy link + member list
     │   └── shared/                Toast, Modal, StatusBadge
     ├── hooks/                     useForms, useBuilder, useRespondent, useToast, useCurrentUser
-    ├── lib/                       api client, auth token, types, validation, constants
+    ├── lib/                       api client (8s timeout), auth token, types, validation, templates, errors
     └── styles/                    dashboard, builder, respondent, results, settings
 ```
 
@@ -102,9 +102,11 @@ formly/
 | `app/` pages | routing only | fetch, form state, CSS layout |
 | `components/` | UI | HTTP URLs, SQL |
 | `hooks/` | client state + calling `lib/api` | JSX layout |
-| `lib/api.ts` | HTTP | React |
+| `lib/api.ts` | HTTP + timeout | React |
+| `lib/errors.ts` | user-facing copy from status / network | fetch |
+| `lib/templates.ts` | starter-kit payloads | HTTP |
 | `api/routes` | HTTP status + wiring | SQL queries |
-| `services/` | validation, publish, submit, webhooks | FastAPI `Request` objects |
+| `services/` | validation, publish, submit, webhooks, invites | FastAPI `Request` objects |
 | `repositories/` | SQLAlchemy queries | HTTP / validation messages |
 | `models/` | tables + relationships | API JSON shape |
 | `schemas/` | request/response DTOs | database sessions |

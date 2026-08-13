@@ -42,7 +42,7 @@ sequenceDiagram
     BB->>API: POST /presence B
     API->>Collab: heartbeat
     Collab->>DB: UPSERT form_presence
-    Collab-->>BA: editors includes B
+    Collab-->>BA: editors includes B (not A)
     BA-->>A: pill "B editing"
     BA->>API: GET /forms/{id}
   end
@@ -50,8 +50,12 @@ sequenceDiagram
   BB->>API: PUT form + actor B
   API->>DB: updated_at, updated_by, form_activity
   BA->>API: GET /forms/{id}
-  Note over BA: remote updated_at changed and A is not dirty
-  BA-->>A: toast "B just saved" + apply live update
+  Note over BA: remote updated_at changed and A is not dirty — not live typing
+  BA-->>A: toast "B just saved" + apply saved form
+  A->>BA: Close builder
+  BA->>API: DELETE /presence
+  API->>Collab: leave
+  Collab->>DB: DELETE form_presence for A
 ```
 
 ## 2. Publish and share
@@ -129,4 +133,30 @@ sequenceDiagram
   Results->>Creator: Response detail modal
   Creator->>Results: Export CSV
   Results->>API: GET /forms/{id}/responses.csv
+```
+
+## 5. Invite teammate (email + copy link)
+
+```mermaid
+sequenceDiagram
+  actor Owner
+  actor Invitee
+  participant Team as TeamView
+  participant API as /api/workspace/invites
+  participant Mail as email_service
+  participant Accept as /invite/{token}
+
+  Owner->>Team: Name, email, role → Send invite
+  Team->>API: POST invite
+  API-->>Team: accept_url immediately
+  Team-->>Owner: Copy invite link
+  API--)Mail: SMTP in background
+  alt Railway blocks 587/465
+    Mail-->>API: email_error set
+    Team-->>Owner: toast + still copy the link
+  else SMTP ok
+    Mail-->>Invitee: branded HTML + plaintext
+  end
+  Invitee->>Accept: Open link, set password
+  Accept-->>Invitee: JWT — now a member
 ```

@@ -32,14 +32,17 @@ App: http://localhost:3000
 Register (first owner): http://localhost:3000/register  
 Public form (no login): http://localhost:3000/f/product-feedback  
 Team: http://localhost:3000/team  
+Templates: dashboard **Templates** tab (starter kits; creates a draft form)
 
-Live collab demo: sign in as two different accounts (two browsers), open the same form, Save in one — the other shows who is editing.
+Later teammates cannot register themselves — invite them from `/team` (email + copy link).
+
+Live collab demo: sign in as two different accounts (two browsers), open the same form. You will see the other editor. Save in one — the other reloads the saved form if their canvas is clean. This is not Google Docs live typing. Closing the builder clears presence.
 
 ## 3. Seeded data (first API start)
 
-- Published: Product feedback, Remote work pulse  
-- Draft: New customer interview  
-- No fake members. Create the owner at `/register`, then invite teammates.  
+- Published: Product feedback, Remote work pulse
+- Draft: New customer interview
+- No fake members. Create the owner at `/register`, then invite teammates.
 
 If you need a clean seed:
 
@@ -75,13 +78,17 @@ docker compose up
 
 ## 6. Deploy (Railway + Cloudflare)
 
+Two Railway services, one volume.
+
 ### Backend (`ruthwikkakumani/formly-backend`)
 
 1. Volume mount path: `/data`
 2. Custom domain: `formly-api.rdrt.dev`
-3. Variables:
+3. Variables — do **not** wrap values in quotes:
 
 ```
+DATABASE_URL=sqlite:////data/typeform.db
+UPLOAD_DIR=/data/uploads
 CORS_ORIGINS=https://formly.rdrt.dev
 FRONTEND_URL=https://formly.rdrt.dev
 AUTH_SECRET=a-long-random-string
@@ -92,7 +99,9 @@ SMTP_PASSWORD=your-16-char-app-password
 SMTP_FROM=you@gmail.com
 ```
 
-Do not wrap values in quotes. Gmail app password must have no spaces. `SMTP_FROM` can be omitted (defaults to `SMTP_USER`). Invite emails are a branded HTML table (Gmail-safe; no animation) plus a plaintext fallback.
+`DATABASE_URL` needs **four** slashes (`sqlite:////data/...`) so SQLite opens the absolute path `/data/typeform.db`. Gmail app password must have no spaces. `SMTP_FROM` can be omitted (defaults to `SMTP_USER`). Invite emails are a branded HTML table (Gmail-safe) plus a plaintext fallback.
+
+Railway often blocks outbound SMTP to Gmail (ports 587/465). When that happens the invite is still created — use **Copy invite link** on the team page. Local SMTP usually works.
 
 Or Resend: `RESEND_API_KEY=re_...` and `INVITE_FROM_EMAIL=Formly <onboarding@resend.dev>`.
 

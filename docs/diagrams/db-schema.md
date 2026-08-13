@@ -1,6 +1,6 @@
 # Database schema (ER)
 
-SQLite file created on boot (local `backend/typeform.db`, production `/data/typeform.db`). Not baked into the Docker image.
+SQLite file created on boot (local `backend/typeform.db`, production `/data/typeform.db` via `DATABASE_URL=sqlite:////data/typeform.db`). Not baked into the Docker image.
 
 ```mermaid
 erDiagram
@@ -75,7 +75,10 @@ erDiagram
     string email
     string role
     string status
+    datetime created_at
     datetime expires_at
+    datetime accepted_at
+    text email_error
   }
 
   form_presence {
@@ -109,8 +112,10 @@ erDiagram
 | `questions.logic` JSON | `{ rules: [{ option, target_id, end }] }` |
 | `forms.theme` JSON | colors, font, thankYou, darkMode |
 | `partial_responses.visitor_id` unique | one in-progress blob per browser |
+| `workspace_invites.status` | `pending`, `accepted`, `revoked`, `expired` |
+| `workspace_invites.email_error` | last SMTP failure (null if sent or not yet attempted); copy link still works |
 | `form_presence (form_id, email)` unique | one live editor row per person per form |
-| `form_presence.last_seen` | drop from UI if older than 20 seconds |
+| `form_presence.last_seen` | drop from UI if older than 8 seconds; leave deletes the row |
 | `form_activity.action` | `created`, `saved`, `renamed`, `published`, `draft`, `duplicated` |
 | ON DELETE CASCADE from form | deleting a form wipes children including presence/activity |
 | Question update by id | saving the builder does not orphan historical answers |
@@ -123,5 +128,6 @@ erDiagram
 - `answers.response_id`, `answers.question_id`
 - `partial_responses.form_id`, `partial_responses.visitor_id`
 - `workspace_members.email`
+- `workspace_invites.token`, `workspace_invites.email`, `workspace_invites.status`
 - `form_presence.form_id`, `form_presence.email`
 - `form_activity.form_id`
