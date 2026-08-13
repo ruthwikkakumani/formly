@@ -24,8 +24,9 @@ formly/
 │   ├── render.yaml
 │   ├── .env.example
 │   └── app/
-│       ├── core/                  settings, question-type constants
+│       ├── core/                  settings, security, constants
 │       │   ├── config.py
+│       │   ├── security.py
 │       │   └── constants.py
 │       ├── db/                    engine, session, declarative Base
 │       │   ├── base.py
@@ -37,12 +38,14 @@ formly/
 │       │   ├── answer.py
 │       │   ├── partial_response.py
 │       │   ├── member.py
+│       │   ├── invite.py
 │       │   ├── presence.py
 │       │   └── activity.py
 │       ├── schemas/               Pydantic request/response contracts
 │       │   ├── form.py
 │       │   ├── question.py
 │       │   ├── submission.py
+│       │   ├── auth.py
 │       │   └── member.py
 │       ├── repositories/          SQL only
 │       │   ├── form_repository.py
@@ -53,20 +56,28 @@ formly/
 │       │   ├── validation_service.py
 │       │   ├── webhook_service.py
 │       │   ├── team_service.py
+│       │   ├── auth_service.py
+│       │   ├── invite_service.py
+│       │   ├── email_service.py
 │       │   ├── collaboration_service.py
 │       │   └── seed.py
 │       └── api/
 │           ├── router.py          mounts route modules
-│           ├── deps.py            shared service instances
+│           ├── deps.py            JWT current user
 │           └── routes/
 │               ├── health.py
-│               ├── forms.py       creator CRUD, publish, results, CSV, presence, activity
+│               ├── auth.py        register / login / me
+│               ├── forms.py       creator CRUD (auth required)
 │               ├── public.py      unauthenticated fill + upload
-│               └── team.py        workspace members
+│               ├── invites.py     send / preview / accept
+│               └── team.py        members
 └── frontend/                      Next.js 15 App Router
     ├── app/
     │   ├── layout.tsx             fonts + global CSS
     │   ├── page.tsx               dashboard (thin)
+    │   ├── login/page.tsx
+    │   ├── register/page.tsx
+    │   ├── invite/[token]/page.tsx
     │   ├── team/page.tsx          collaboration
     │   ├── builder/[id]/page.tsx  builder (thin)
     │   └── f/[slug]/page.tsx      public fill (thin, no auth)
@@ -80,7 +91,7 @@ formly/
     │   ├── team/                  invite + member list
     │   └── shared/                Toast, Modal, StatusBadge
     ├── hooks/                     useForms, useBuilder, useRespondent, useToast, useCurrentUser
-    ├── lib/                       api client, types, validation, constants
+    ├── lib/                       api client, auth token, types, validation, constants
     └── styles/                    dashboard, builder, respondent, results, settings
 ```
 

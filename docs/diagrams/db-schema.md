@@ -1,6 +1,6 @@
 # Database schema (ER)
 
-SQLite file: `backend/typeform.db`. Designed for this product (not copied from Typeform).
+SQLite file created on boot (local `backend/typeform.db`, production `/data/typeform.db`). Not baked into the Docker image.
 
 ```mermaid
 erDiagram
@@ -64,7 +64,18 @@ erDiagram
     string name
     string email UK
     string role
+    string password_hash
     datetime created_at
+  }
+
+  workspace_invites {
+    int id PK
+    string token UK
+    string name
+    string email
+    string role
+    string status
+    datetime expires_at
   }
 
   form_presence {

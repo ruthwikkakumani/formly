@@ -86,11 +86,23 @@ Respondent steps: `loading → welcome → question* → thanks | error`.
 | POST | `/api/public/{slug}/responses` | final submit |
 | POST | `/api/public/{slug}/upload` | file question |
 
-### Workspace
+### Auth (JWT)
 
 | Method | Path | Use |
 |---|---|---|
-| GET/POST | `/api/workspace/members` | list / invite |
+| POST | `/api/auth/register` | first account becomes owner |
+| POST | `/api/auth/login` | email + password → token |
+| GET | `/api/auth/me` | current user |
+
+### Workspace (Bearer token)
+
+| Method | Path | Use |
+|---|---|---|
+| GET | `/api/workspace/members` | accepted members |
+| GET/POST | `/api/workspace/invites` | pending invites / send email |
+| DELETE | `/api/workspace/invites/{id}` | revoke |
+| GET | `/api/invites/{token}` | public preview |
+| POST | `/api/invites/{token}/accept` | set password; only then a member is created |
 | DELETE | `/api/workspace/members/{id}` | remove (not owner) |
 
 ## 6. Question types
@@ -101,7 +113,7 @@ Logic jumps apply to choice / yes-no / dropdown: a list of `{ option, target_id,
 
 ## 7. Persistence
 
-SQLite file `backend/typeform.db`. JSON columns: `theme`, `options`, `logic`, partial `answers`. Cascades: deleting a form deletes questions, responses, answers, partials, presence, and activity.
+SQLite file created on boot (local `backend/typeform.db`, Railway `/data/typeform.db`). The Docker image does not ship a `.db` file. JSON columns: `theme`, `options`, `logic`, partial `answers`. Cascades: deleting a form deletes questions, responses, answers, partials, presence, and activity.
 
 ## 8. Auth assumption
 
@@ -115,4 +127,4 @@ Creators sign in with email/password (JWT). First register is owner; others join
 | Who saved / modified | `form.updated_by` + `form_activity` log (created, saved, renamed, published) |
 | Live changes | Other open builders poll `GET /forms/{id}`; if `updated_at` changed and local is clean, the form reloads automatically |
 
-Identity is chosen from workspace members (per browser tab) because real login is optional in the brief.
+Identity is the signed-in JWT account. Heartbeats stamp that name/email; you cannot spoof another teammate from the client.

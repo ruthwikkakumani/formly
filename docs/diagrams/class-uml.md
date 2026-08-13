@@ -51,7 +51,17 @@ classDiagram
     +str name
     +str email
     +str role
+    +str password_hash
     +datetime created_at
+  }
+  class WorkspaceInvite {
+    +int id
+    +str token
+    +str name
+    +str email
+    +str role
+    +str status
+    +datetime expires_at
   }
   class FormPresence {
     +int id
@@ -115,13 +125,22 @@ classDiagram
   }
   class TeamService {
     +list(db)
-    +invite(db, payload)
     +remove(db, id)
+  }
+  class AuthService {
+    +register(db, payload)
+    +login(db, payload)
+  }
+  class InviteService {
+    +create(db, payload)
+    +accept(db, token, password)
+    +revoke(db, id)
   }
   FormService --> FormRepository
   FormService --> CollaborationService
   ResponseService --> FormService
   ResponseService --> ResponseRepository
+  InviteService --> AuthService
 ```
 
 ## Frontend (React)

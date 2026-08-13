@@ -19,7 +19,8 @@ flowchart TB
     UC6[Copy share link]
     UC7[View results and stats]
     UC8[Export CSV]
-    UC9[Invite teammates]
+    UC9[Invite by email]
+    UC17[Accept invite / sign in]
     UC14[See who is editing live]
     UC15[See who last saved]
     UC16[View activity history]
@@ -41,6 +42,7 @@ flowchart TB
   C --> UC7
   C --> UC8
   C --> UC9
+  C --> UC17
   C --> UC14
   C --> UC15
   C --> UC16
@@ -65,4 +67,5 @@ flowchart TB
 | Activity history | Creator / teammate | Form exists | Settings shows saved / renamed / published log |
 | Publish | Creator | Form has ≥1 question | `status=published`, public GET works |
 | Fill | Respondent | Form published | Response + answers stored; partial cleared |
-| Invite | Creator | Owner/editor | Member row in `workspace_members` |
+| Invite | Creator | Signed-in owner/editor | Pending invite + email; no member yet |
+| Accept invite | Invitee | Valid token | Account + member created; JWT issued |

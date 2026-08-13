@@ -4,13 +4,13 @@
 
 Formly clones Typeform’s workspace, builder, and conversational one-question-at-a-time fill flow. Creators build and publish forms; anyone with the link can respond without logging in. Results, themes, webhooks, team invites, live “who is editing”, save history, and bonus question types are included.
 
-The repository contains `frontend/` and `backend/` as required by the assignment. Seeded published forms load on first API start so the app is usable immediately.
+The repository contains `frontend/` and `backend/` as required by the assignment. Seeded published forms load on first API start. Creators register at `/register`; public fill needs no login.
 
 ## Tech stack
 
 - **Frontend:** Next.js 15, React 19, TypeScript
 - **Backend:** FastAPI, SQLAlchemy 2, Pydantic
-- **Database:** SQLite (`backend/typeform.db`)
+- **Database:** SQLite file created on boot (`typeform.db`). Local: `backend/typeform.db`. Railway: `/data/typeform.db` on a volume. The Docker image does **not** bake in a database.
 
 ## Run locally
 
@@ -61,13 +61,13 @@ formly/
 │   └── app/
 │       ├── core/         config, constants
 │       ├── db/           engine, session
-│       ├── models/       Form, Question, Response, Answer, Partial, Member, Presence, Activity
+│       ├── models/       Form, Question, Response, Answer, Partial, Member, Invite, Presence, Activity
 │       ├── schemas/      Pydantic DTOs
 │       ├── repositories/ SQL access
-│       ├── services/     rules, validation, seed, webhooks, collaboration
-│       └── api/routes/   forms, public, team, health, presence
+│       ├── services/     rules, auth, invites, email, seed, webhooks, collaboration
+│       └── api/routes/   auth, forms, public, team, invites, health
 └── frontend/
-    ├── app/              thin routes: /, /builder/[id], /f/[slug], /team
+    ├── app/              /, /login, /register, /invite/[token], /builder/[id], /f/[slug], /team
     ├── components/       dashboard, builder, results, settings, respondent, team
     ├── hooks/            useForms, useBuilder, useRespondent, useCurrentUser
     ├── lib/              api, types, validation
@@ -120,7 +120,10 @@ Saving a form updates questions by id so historical answers are kept. Full colum
 - `GET /api/forms/{id}/responses` · `GET /api/forms/{id}/stats` · `GET /api/forms/{id}/responses.csv`
 - `POST/GET /api/forms/{id}/presence` · `GET /api/forms/{id}/activity`
 - `GET /api/public/{slug}` · `POST /api/public/{slug}/responses|partial|upload`
+- `POST /api/auth/register` · `POST /api/auth/login` · `GET /api/auth/me`
 - `GET/POST /api/workspace/members` · `DELETE /api/workspace/members/{id}`
+- `GET/POST /api/workspace/invites` · `DELETE /api/workspace/invites/{id}`
+- `GET /api/invites/{token}` · `POST /api/invites/{token}/accept`
 - `GET /api/health`
 
 ## Features
@@ -137,17 +140,18 @@ Builder, CRUD, publish/share, conversational fill (keyboard + progress + validat
 
 ## Demo / deployment
 
-1. Deploy `backend/` on Render (Docker + persistent disk for `typeform.db` / `uploads/`).
-2. Set `CORS_ORIGINS` to your frontend origin, or rely on the default Vercel/Netlify regex.
-3. Deploy `frontend/` on Vercel with:
+Live demo: [https://formly.rdrt.dev](https://formly.rdrt.dev) · API: [https://formly-api.rdrt.dev/docs](https://formly-api.rdrt.dev/docs)
 
-```
-NEXT_PUBLIC_API_URL=https://YOUR-API-HOST/api
-```
+Docker Hub: `ruthwikkakumani/formly-frontend` and `ruthwikkakumani/formly-backend`.
 
-Public fill (no login): `/f/product-feedback`
+1. Railway: two services from those images. Mount a **volume at `/data`** on the backend (SQLite + uploads).
+2. Backend env: `CORS_ORIGINS=https://formly.rdrt.dev`, `FRONTEND_URL=https://formly.rdrt.dev`, `AUTH_SECRET=...`, plus SMTP or Resend for invite mail.
+3. Frontend env: `NEXT_PUBLIC_API_URL=https://formly-api.rdrt.dev/api`
 
-Step-by-step commands: [COMMANDS.md](./COMMANDS.md).
+Public fill (no login): `/f/product-feedback`  
+Create owner: `/register`
+
+Step-by-step: [COMMANDS.md](./COMMANDS.md).
 
 ## Original work
 

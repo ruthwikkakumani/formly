@@ -14,15 +14,16 @@ flowchart LR
 
   subgraph FastAPI
     Routes[api/routes]
-    Services[Form Response Team Collab]
+    Services[Auth Invite Form Response Team Collab]
     Repos[repositories]
     Models[SQLAlchemy models]
     Routes --> Services --> Repos --> Models
   end
 
-  Client -->|REST JSON /api| Routes
+  Client -->|REST JSON /api + JWT| Routes
   Client -->|presence heartbeat 4s| Routes
-  Models --> SQLite[(typeform.db)]
+  Models --> SQLite[(typeform.db on volume)]
+  Services -->|invite email| SMTP[SMTP or Resend]
   Services -->|optional POST| Webhook[Creator webhook URL]
   Routes -->|/uploads| Disk[uploads/]
 ```
@@ -32,14 +33,18 @@ flowchart LR
 ```mermaid
 flowchart TB
   User[Respondent or Creator]
-  Vercel[Vercel - frontend/]
-  Render[Render/Railway - backend/]
-  Disk[(Persistent SQLite + uploads)]
+  CF[Cloudflare DNS rdrt.dev]
+  Web[Railway formly-frontend]
+  API[Railway formly-backend]
+  Vol[(Volume /data SQLite + uploads)]
 
-  User --> Vercel
-  Vercel -->|NEXT_PUBLIC_API_URL| Render
-  User -->|/f/slug no auth| Vercel
-  Render --> Disk
+  User --> CF
+  CF --> Web
+  CF --> API
+  Web -->|NEXT_PUBLIC_API_URL| API
+  User -->|/f/slug no auth| Web
+  API --> Vol
 ```
 
-CORS allows localhost plus `*.vercel.app` / `*.netlify.app` / `*.onrender.com`.
+Images: `ruthwikkakumani/formly-frontend` and `ruthwikkakumani/formly-backend`.  
+CORS allows localhost, `*.up.railway.app`, and `*.rdrt.dev`.
