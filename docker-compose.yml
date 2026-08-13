@@ -7,7 +7,7 @@ services:
     volumes:
       - formly-data:/data
     environment:
-      CORS_ORIGINS: '["http://localhost:3000"]'
+      CORS_ORIGINS: http://localhost:3000
 
   frontend:
     image: ruthwikkakumani/formly-frontend:latest

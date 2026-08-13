@@ -64,7 +64,7 @@ git push -u origin master
 1. New Web Service from `backend/`
 2. Dockerfile is already in `backend/Dockerfile`
 3. Add a persistent disk for `typeform.db` and `uploads/`
-4. Set `CORS_ORIGINS=["https://YOUR-FRONTEND.vercel.app"]`
+4. Set `CORS_ORIGINS=https://formly.rdrt.dev` (plain URL, not JSON)
 
 ### Frontend (Vercel)
 
