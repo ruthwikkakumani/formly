@@ -44,7 +44,6 @@ export function PublicFormView({ slug }: { slug: string }) {
             <span>
               {flow.index + 1} of {flow.form.questions.length}
             </span>
-            <span>Powered by formly</span>
           </div>
           <QuestionScreen
             question={flow.question}
