@@ -36,9 +36,14 @@ export function useBuilder(id: string) {
   }, [id]);
 
   useEffect(() => {
-    if (!current) return;
+    const email = (current?.email || actor.actor_email || "").trim();
+    if (!email) return;
+    const presenceActor = {
+      actor_name: current?.name || actor.actor_name || "",
+      actor_email: email,
+    };
     const tick = () => {
-      void formsApi.heartbeat(id, actor).then(setEditors).catch(() => undefined);
+      void formsApi.heartbeat(id, presenceActor).then(setEditors).catch(() => undefined);
       void formsApi
         .get(id)
         .then((remote) => {
@@ -54,10 +59,20 @@ export function useBuilder(id: string) {
         })
         .catch(() => undefined);
     };
+    const leave = () => {
+      void formsApi.leave(id);
+    };
     tick();
     const timer = window.setInterval(tick, 4000);
-    return () => window.clearInterval(timer);
-  }, [id, current?.email, actor.actor_email, actor.actor_name, showToast]);
+    window.addEventListener("beforeunload", leave);
+    window.addEventListener("pagehide", leave);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("beforeunload", leave);
+      window.removeEventListener("pagehide", leave);
+      leave();
+    };
+  }, [id, current?.email, current?.name, actor.actor_email, actor.actor_name, showToast]);
 
   const change = (patch: Partial<FormDefinition>) => {
     if (!form) return;

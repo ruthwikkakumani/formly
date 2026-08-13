@@ -98,6 +98,12 @@ export const formsApi = {
     URL.revokeObjectURL(url);
   },
   heartbeat: (id: string | number, actor: unknown) => request<FormEditor[]>(`/forms/${id}/presence`, json("POST", actor)),
+  leave: (id: string | number) => {
+    const headers = new Headers(authHeaders());
+    return fetch(`${apiBase()}/forms/${id}/presence`, { method: "DELETE", headers, keepalive: true }).catch(
+      () => undefined,
+    );
+  },
   editors: (id: string | number) => request<FormEditor[]>(`/forms/${id}/presence`),
   activity: (id: string | number) => request<FormActivity[]>(`/forms/${id}/activity`),
 };

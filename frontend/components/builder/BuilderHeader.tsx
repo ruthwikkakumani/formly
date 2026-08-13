@@ -25,9 +25,10 @@ export function BuilderHeader({
   onPublish: () => void;
   onCopyLink: () => void;
 }) {
-  const others = editors.filter(
-    (editor) => editor.email !== current?.email.toLowerCase() && editor.email !== current?.email,
-  );
+  const selfEmail = (current?.email || "").trim().toLowerCase();
+  const others = selfEmail
+    ? editors.filter((editor) => (editor.email || "").trim().toLowerCase() !== selfEmail)
+    : [];
 
   return (
     <header className="builderhead">

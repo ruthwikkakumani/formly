@@ -68,7 +68,15 @@ def toggle_publish(
 @router.post("/{form_id}/presence")
 def heartbeat(form_id: int, payload: PresencePayload, db: Session = Depends(get_db), user: Member = Depends(get_current_user)):
     form_service.require(db, form_id)
-    return collab.heartbeat(db, form_id, user.name, user.email)
+    email = (user.email or payload.actor_email or "").strip()
+    name = (user.name or payload.actor_name or "").strip()
+    return collab.heartbeat(db, form_id, name, email)
+
+
+@router.delete("/{form_id}/presence")
+def leave_presence(form_id: int, db: Session = Depends(get_db), user: Member = Depends(get_current_user)):
+    form_service.require(db, form_id)
+    return collab.leave(db, form_id, user.name, user.email)
 
 
 @router.get("/{form_id}/presence")

@@ -1,15 +1,23 @@
 from datetime import datetime, timedelta
 
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.models import FormActivity, FormPresence
 
-STALE_AFTER = timedelta(seconds=20)
+STALE_AFTER = timedelta(seconds=8)
+
+
+def _email_key(email: str) -> str:
+    return (email or "").strip().lower()
 
 
 class CollaborationService:
     def heartbeat(self, db: Session, form_id: int, name: str, email: str) -> list[dict]:
-        key = (email or name or "anonymous").strip().lower()
+        key = _email_key(email)
+        if not key:
+            raise HTTPException(status_code=400, detail="Presence requires a signed-in email.")
+        self._clear_legacy_name_row(db, form_id, name, key)
         row = (
             db.query(FormPresence)
             .filter(FormPresence.form_id == form_id, FormPresence.email == key)
@@ -23,6 +31,19 @@ class CollaborationService:
             db.add(FormPresence(form_id=form_id, name=name or "Teammate", email=key, last_seen=now))
         db.commit()
         return self.active_editors(db, form_id)
+
+    def leave(self, db: Session, form_id: int, name: str, email: str) -> dict:
+        key = _email_key(email)
+        if key:
+            db.query(FormPresence).filter(FormPresence.form_id == form_id, FormPresence.email == key).delete()
+        self._clear_legacy_name_row(db, form_id, name, key)
+        db.commit()
+        return {"ok": True}
+
+    def _clear_legacy_name_row(self, db: Session, form_id: int, name: str, email_key: str) -> None:
+        legacy = (name or "").strip().lower()
+        if legacy and legacy != email_key:
+            db.query(FormPresence).filter(FormPresence.form_id == form_id, FormPresence.email == legacy).delete()
 
     def active_editors(self, db: Session, form_id: int) -> list[dict]:
         cutoff = datetime.utcnow() - STALE_AFTER
