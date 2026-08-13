@@ -1,4 +1,4 @@
-import { FormDefinition, FormResponse, FormStats, WorkspaceMember } from "./types";
+import { FormActivity, FormDefinition, FormEditor, FormResponse, FormStats, WorkspaceMember } from "./types";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
@@ -24,13 +24,18 @@ export const formsApi = {
   get: (id: string | number) => request<FormDefinition>(`/forms/${id}`),
   create: (form: unknown) => request<FormDefinition>("/forms", json("POST", form)),
   update: (id: string | number, form: unknown) => request<FormDefinition>(`/forms/${id}`, json("PUT", form)),
-  rename: (id: number, title: string) => request<FormDefinition>(`/forms/${id}`, json("PATCH", { title })),
+  rename: (id: number, title: string, actor?: unknown) =>
+    request<FormDefinition>(`/forms/${id}`, json("PATCH", { title, ...(actor as object) })),
   remove: (id: number) => request<{ ok: boolean }>(`/forms/${id}`, { method: "DELETE" }),
   duplicate: (id: number) => request<FormDefinition>(`/forms/${id}/duplicate`, { method: "POST" }),
-  togglePublish: (id: string | number) => request<FormDefinition>(`/forms/${id}/publish`, { method: "POST" }),
+  togglePublish: (id: string | number, actor?: unknown) =>
+    request<FormDefinition>(`/forms/${id}/publish`, json("POST", actor || {})),
   responses: (id: string | number) => request<FormResponse[]>(`/forms/${id}/responses`),
   stats: (id: string | number) => request<FormStats>(`/forms/${id}/stats`),
   exportUrl: (id: string | number) => `${API}/forms/${id}/responses.csv`,
+  heartbeat: (id: string | number, actor: unknown) => request<FormEditor[]>(`/forms/${id}/presence`, json("POST", actor)),
+  editors: (id: string | number) => request<FormEditor[]>(`/forms/${id}/presence`),
+  activity: (id: string | number) => request<FormActivity[]>(`/forms/${id}/activity`),
 };
 
 export const teamApi = {

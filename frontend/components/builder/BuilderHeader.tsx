@@ -1,10 +1,15 @@
 import Link from "next/link";
 
-import { FormDefinition } from "@/lib/types";
+import { FormDefinition, FormEditor, WorkspaceMember } from "@/lib/types";
 
 export function BuilderHeader({
   form,
   tab,
+  editors,
+  current,
+  members,
+  onSwitchUser,
+  dirty,
   onTab,
   onTitle,
   onSave,
@@ -13,12 +18,19 @@ export function BuilderHeader({
 }: {
   form: FormDefinition;
   tab: "Build" | "Results" | "Settings";
+  editors: FormEditor[];
+  current?: WorkspaceMember;
+  members: WorkspaceMember[];
+  onSwitchUser: (email: string) => void;
+  dirty: boolean;
   onTab: (tab: "Build" | "Results" | "Settings") => void;
   onTitle: (title: string) => void;
   onSave: () => void;
   onPublish: () => void;
   onCopyLink: () => void;
 }) {
+  const others = editors.filter((editor) => editor.email !== current?.email.toLowerCase() && editor.email !== current?.email);
+
   return (
     <header className="builderhead">
       <Link href="/" className="brand">
@@ -30,6 +42,30 @@ export function BuilderHeader({
         className="titleinput"
         aria-label="Form title"
       />
+      <div className="presence">
+        {others.length ? (
+          <span className="livepill">
+            {others.map((editor) => editor.name).join(", ")} editing
+          </span>
+        ) : (
+          <span className="livepill quiet">Only you</span>
+        )}
+        <span className="savedby">
+          {dirty ? "Unsaved changes" : `Last saved by ${form.updated_by || "—"}`}
+        </span>
+        <select
+          className="whoami"
+          value={current?.email || ""}
+          onChange={(event) => onSwitchUser(event.target.value)}
+          aria-label="Who is editing"
+        >
+          {members.map((member) => (
+            <option value={member.email} key={member.id}>
+              {member.name}
+            </option>
+          ))}
+        </select>
+      </div>
       <nav>
         {(["Build", "Results", "Settings"] as const).map((item) => (
           <button className={tab === item ? "active" : ""} onClick={() => onTab(item)} key={item}>

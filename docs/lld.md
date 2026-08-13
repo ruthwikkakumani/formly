@@ -96,4 +96,14 @@ SQLite file `backend/typeform.db`. JSON columns: `theme`, `options`, `logic`, pa
 
 ## 8. Auth assumption
 
-Assignment allows a default logged-in creator. There is one workspace; the avatar is the assumed owner. Public fill has **zero** auth.
+Assignment allows a default logged-in creator. There is one workspace. Public fill has **zero** auth.
+
+## 9. Live collaboration
+
+| Mechanism | How |
+|---|---|
+| Who is editing now | `POST /api/forms/{id}/presence` heartbeat every 4s; editors with `last_seen` &lt; 20s shown in the builder |
+| Who saved / modified | `form.updated_by` + `form_activity` log (created, saved, renamed, published) |
+| Live changes | Other open builders poll `GET /forms/{id}`; if `updated_at` changed and local is clean, the form reloads automatically |
+
+Identity is chosen from workspace members (per browser tab) because real login is optional in the brief.

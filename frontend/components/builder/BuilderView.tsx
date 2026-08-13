@@ -4,6 +4,7 @@ import { Toast } from "@/components/shared/Toast";
 import { useBuilder } from "@/hooks/useBuilder";
 import { ResultsView } from "@/components/results/ResultsView";
 import { SettingsView } from "@/components/settings/SettingsView";
+import { ActivityLog } from "./ActivityLog";
 import { BuilderCanvas } from "./BuilderCanvas";
 import { BuilderHeader } from "./BuilderHeader";
 import { QuestionEditor } from "./QuestionEditor";
@@ -20,6 +21,11 @@ export function BuilderView({ id }: { id: string }) {
       <BuilderHeader
         form={builder.form}
         tab={builder.tab}
+        editors={builder.editors}
+        current={builder.current}
+        members={builder.members}
+        onSwitchUser={builder.switchUser}
+        dirty={builder.dirty}
         onTab={builder.setTab}
         onTitle={(title) => builder.change({ title })}
         onSave={() => void builder.save()}
@@ -57,7 +63,10 @@ export function BuilderView({ id }: { id: string }) {
       )}
       {builder.tab === "Results" && <ResultsView id={id} questions={builder.form.questions} />}
       {builder.tab === "Settings" && (
-        <SettingsView form={builder.form} onChange={builder.change} onSave={() => void builder.save()} />
+        <>
+          <SettingsView form={builder.form} onChange={builder.change} onSave={() => void builder.save()} />
+          <ActivityLog events={builder.activity} />
+        </>
       )}
       <Toast message={builder.toast} />
     </main>

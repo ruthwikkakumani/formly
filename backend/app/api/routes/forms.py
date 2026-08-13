@@ -1,12 +1,15 @@
 import csv
 import io
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Body, Depends, Response
 from sqlalchemy.orm import Session
 
 from app.api.deps import form_service, response_service
 from app.db.session import get_db
-from app.schemas.form import FormPayload, RenamePayload
+from app.schemas.form import ActorActionPayload, FormPayload, PresencePayload, RenamePayload
+from app.services.collaboration_service import CollaborationService
+
+collab = CollaborationService()
 
 router = APIRouter(prefix="/forms", tags=["forms"])
 
@@ -33,7 +36,9 @@ def update_form(form_id: int, payload: FormPayload, db: Session = Depends(get_db
 
 @router.patch("/{form_id}")
 def rename_form(form_id: int, payload: RenamePayload, db: Session = Depends(get_db)):
-    return form_service.serialize(form_service.rename(db, form_id, payload.title))
+    return form_service.serialize(
+        form_service.rename(db, form_id, payload.title, payload.actor_name, payload.actor_email)
+    )
 
 
 @router.delete("/{form_id}")
@@ -48,8 +53,32 @@ def duplicate_form(form_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/{form_id}/publish")
-def toggle_publish(form_id: int, db: Session = Depends(get_db)):
-    return form_service.serialize(form_service.toggle_publish(db, form_id))
+def toggle_publish(
+    form_id: int,
+    payload: ActorActionPayload = Body(default_factory=ActorActionPayload),
+    db: Session = Depends(get_db),
+):
+    return form_service.serialize(
+        form_service.toggle_publish(db, form_id, payload.actor_name, payload.actor_email)
+    )
+
+
+@router.post("/{form_id}/presence")
+def heartbeat(form_id: int, payload: PresencePayload, db: Session = Depends(get_db)):
+    form_service.require(db, form_id)
+    return collab.heartbeat(db, form_id, payload.actor_name, payload.actor_email)
+
+
+@router.get("/{form_id}/presence")
+def list_editors(form_id: int, db: Session = Depends(get_db)):
+    form_service.require(db, form_id)
+    return collab.active_editors(db, form_id)
+
+
+@router.get("/{form_id}/activity")
+def form_activity(form_id: int, db: Session = Depends(get_db)):
+    form_service.require(db, form_id)
+    return collab.history(db, form_id)
 
 
 @router.get("/{form_id}/responses")

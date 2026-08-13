@@ -60,7 +60,7 @@ export function FormCard({
       </Link>
       <footer>
         <span>{form.response_count} responses</span>
-        <span>{form.questions.length} questions</span>
+        <span>{form.updated_by ? `Edited by ${form.updated_by}` : `${form.questions.length} questions`}</span>
       </footer>
       <div className="cardactions">
         <button onClick={() => void onPublish(form)}>

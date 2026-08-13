@@ -22,6 +22,8 @@ class Form(Base):
     status: Mapped[str] = mapped_column(String(20), default="draft")
     slug: Mapped[str] = mapped_column(String(80), unique=True, index=True)
     webhook_url: Mapped[str] = mapped_column(String(500), default="")
+    updated_by: Mapped[str] = mapped_column(String(120), default="")
+    updated_by_email: Mapped[str] = mapped_column(String(180), default="")
     theme: Mapped[dict] = mapped_column(JSON, default=lambda: dict(THEME_DEFAULTS))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(

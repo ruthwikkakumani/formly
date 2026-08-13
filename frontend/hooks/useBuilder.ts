@@ -1,24 +1,58 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { formsApi } from "@/lib/api";
 import { createQuestion } from "@/lib/constants";
-import { FormDefinition, Question, QuestionType } from "@/lib/types";
+import { FormActivity, FormDefinition, FormEditor, Question, QuestionType } from "@/lib/types";
+import { useCurrentUser } from "./useCurrentUser";
 import { useToast } from "./useToast";
 
 export function useBuilder(id: string) {
   const [form, setForm] = useState<FormDefinition>();
   const [selected, setSelected] = useState(0);
   const [tab, setTab] = useState<"Build" | "Results" | "Settings">("Build");
+  const [editors, setEditors] = useState<FormEditor[]>([]);
+  const [activity, setActivity] = useState<FormActivity[]>([]);
+  const [dirty, setDirty] = useState(false);
   const { toast, showToast } = useToast();
+  const { actor, current, members, switchUser } = useCurrentUser();
+  const loadedAt = useRef("");
+  const dirtyRef = useRef(false);
+  dirtyRef.current = dirty;
 
   useEffect(() => {
-    void formsApi.get(id).then(setForm);
+    void formsApi.get(id).then((payload) => {
+      setForm(payload);
+      loadedAt.current = payload.updated_at || "";
+    });
+    void formsApi.activity(id).then(setActivity).catch(() => undefined);
   }, [id]);
+
+  useEffect(() => {
+    if (!current) return;
+    const tick = () => {
+      void formsApi.heartbeat(id, actor).then(setEditors).catch(() => undefined);
+      void formsApi.get(id).then((remote) => {
+        const remoteStamp = remote.updated_at || "";
+        if (remoteStamp && remoteStamp !== loadedAt.current && !dirtyRef.current) {
+          setForm(remote);
+          loadedAt.current = remoteStamp;
+          showToast(`${remote.updated_by || "A teammate"} just saved — live update applied`);
+          void formsApi.activity(id).then(setActivity);
+        } else if (remoteStamp !== loadedAt.current && dirtyRef.current) {
+          showToast(`${remote.updated_by || "A teammate"} saved a newer version. Save yours or reload.`);
+        }
+      });
+    };
+    tick();
+    const timer = window.setInterval(tick, 4000);
+    return () => window.clearInterval(timer);
+  }, [id, current?.email, actor.actor_email, actor.actor_name, showToast]);
 
   const change = (patch: Partial<FormDefinition>) => {
     if (!form) return;
+    setDirty(true);
     setForm({ ...form, ...patch });
   };
 
@@ -58,14 +92,20 @@ export function useBuilder(id: string) {
 
   async function save() {
     if (!form) return;
-    setForm(await formsApi.update(id, form));
-    showToast("All changes saved");
+    const saved = await formsApi.update(id, { ...form, ...actor });
+    setForm(saved);
+    loadedAt.current = saved.updated_at || "";
+    setDirty(false);
+    setActivity(await formsApi.activity(id));
+    showToast(`Saved by ${current?.name || "you"}`);
   }
 
   async function publish() {
     if (!form) return;
-    const next = await formsApi.togglePublish(id);
+    const next = await formsApi.togglePublish(id, actor);
     setForm(next);
+    loadedAt.current = next.updated_at || "";
+    setActivity(await formsApi.activity(id));
     showToast(form.status === "draft" ? "Your form is live" : "Form unpublished");
   }
 
@@ -82,6 +122,12 @@ export function useBuilder(id: string) {
     tab,
     setTab,
     toast,
+    editors,
+    activity,
+    current,
+    members,
+    switchUser,
+    dirty,
     change,
     changeQuestion,
     addQuestion,

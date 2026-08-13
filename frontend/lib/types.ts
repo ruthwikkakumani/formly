@@ -50,6 +50,8 @@ export interface FormDefinition {
   status: FormStatus;
   slug: string;
   webhook_url?: string;
+  updated_by?: string;
+  updated_by_email?: string;
   theme: FormTheme;
   created_at?: string;
   updated_at?: string;
@@ -86,4 +88,19 @@ export interface WorkspaceMember {
   email: string;
   role: MemberRole;
   created_at?: string;
+}
+
+export interface FormEditor {
+  name: string;
+  email: string;
+  last_seen: string;
+}
+
+export interface FormActivity {
+  id: number;
+  actor_name: string;
+  actor_email: string;
+  action: string;
+  detail: string;
+  created_at: string;
 }

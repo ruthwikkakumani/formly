@@ -6,7 +6,12 @@ from app.core.constants import THEME_DEFAULTS
 from app.schemas.question import QuestionPayload, QuestionRead
 
 
-class FormPayload(BaseModel):
+class ActorPayload(BaseModel):
+    actor_name: str = ""
+    actor_email: str = ""
+
+
+class FormPayload(ActorPayload):
     title: str = "Untitled form"
     description: str = ""
     webhook_url: str = ""
@@ -14,8 +19,16 @@ class FormPayload(BaseModel):
     questions: list[QuestionPayload] = Field(default_factory=list)
 
 
-class RenamePayload(BaseModel):
+class RenamePayload(ActorPayload):
     title: str
+
+
+class PresencePayload(ActorPayload):
+    pass
+
+
+class ActorActionPayload(ActorPayload):
+    pass
 
 
 class FormRead(BaseModel):

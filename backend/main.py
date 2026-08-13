@@ -11,7 +11,7 @@ from app.api.router import api_router
 from app.core.config import settings
 from app.db.base import Base
 from app.db.session import SessionLocal, engine
-from app.models import Answer, Form, Member, PartialResponse, Question, Response  # noqa: F401
+from app.models import Answer, Form, FormActivity, FormPresence, Member, PartialResponse, Question, Response  # noqa: F401
 from app.services.seed import seed_database
 
 
@@ -28,6 +28,12 @@ def _ensure_sqlite_columns() -> None:
         if "webhook_url" not in form_columns:
             with engine.begin() as connection:
                 connection.execute(text("ALTER TABLE forms ADD COLUMN webhook_url VARCHAR(500) DEFAULT ''"))
+        if "updated_by" not in form_columns:
+            with engine.begin() as connection:
+                connection.execute(text("ALTER TABLE forms ADD COLUMN updated_by VARCHAR(120) DEFAULT ''"))
+        if "updated_by_email" not in form_columns:
+            with engine.begin() as connection:
+                connection.execute(text("ALTER TABLE forms ADD COLUMN updated_by_email VARCHAR(180) DEFAULT ''"))
 
 
 @asynccontextmanager
