@@ -14,6 +14,7 @@ class Settings(BaseSettings):
             "http://127.0.0.1:3000",
         ]
     )
+    cors_origin_regex: str = r"https://.*\.(vercel\.app|netlify\.app|onrender\.com)"
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

@@ -1,6 +1,10 @@
 # Formly — Typeform-inspired full-stack form builder
 
+**GitHub (public):** [https://github.com/ruthwikkakumani/formly](https://github.com/ruthwikkakumani/formly)
+
 Formly clones Typeform’s workspace, builder, and conversational one-question-at-a-time fill flow. Creators build and publish forms; anyone with the link can respond without logging in. Results, themes, webhooks, team invites, and bonus question types are included.
+
+The repository contains `frontend/` and `backend/` as required by the assignment. Seeded published forms load on first API start so the app is usable immediately.
 
 ## Tech stack
 
@@ -68,6 +72,20 @@ Builder, CRUD, publish/share, conversational fill (keyboard + progress + validat
 - Payments record a successful pay action in the response (no live Stripe keys).
 - Webhooks POST JSON on submit; a down endpoint does not fail the response.
 - Team invites are stored in the workspace (no outbound email provider).
+
+## Demo / deployment
+
+1. Deploy `backend/` on Render (Docker + persistent disk for `typeform.db` / `uploads/`).
+2. Set `CORS_ORIGINS` to your frontend origin, or rely on the default Vercel/Netlify regex.
+3. Deploy `frontend/` on Vercel with:
+
+```
+NEXT_PUBLIC_API_URL=https://YOUR-API-HOST/api
+```
+
+Public fill (no login): `/f/product-feedback`
+
+Step-by-step commands: [COMMANDS.md](./COMMANDS.md).
 
 ## Original work
 

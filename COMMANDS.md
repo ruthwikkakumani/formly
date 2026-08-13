@@ -45,20 +45,14 @@ Then restart the API.
 
 ## 4. Public GitHub repository
 
+Repo name: **formly**  
+Live repo: https://github.com/ruthwikkakumani/formly
+
+If you need to push new commits:
+
 ```bash
-git add frontend backend README.md COMMANDS.md .gitignore
-git status
-git commit -m "$(cat <<'EOF'
-Ship Formly Typeform clone with builder, public fill, results, and collaboration.
-
-EOF
-)"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
-git push -u origin main
+git push -u origin master
 ```
-
-On GitHub: create an empty public repo first, then replace `YOUR_USERNAME/YOUR_REPO`.
 
 ## 5. Deploy
 
@@ -84,5 +78,5 @@ NEXT_PUBLIC_API_URL=https://YOUR-API-HOST/api
 
 ## 6. What to submit
 
-- GitHub: `https://github.com/YOUR_USERNAME/YOUR_REPO`
-- Demo: your Vercel URL (try `/f/product-feedback` with no login)
+- GitHub: https://github.com/ruthwikkakumani/formly
+- Demo: your Vercel frontend URL (open `/f/product-feedback` with no login)
