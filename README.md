@@ -129,11 +129,11 @@ Builder, CRUD, publish/share, conversational fill (keyboard + progress + validat
 
 ## Assumptions
 
-- Creator auth is a default logged-in workspace (assignment allows this).
+- Creators sign in with email/password. First register becomes owner; later people join only via invite accept. Public fill links stay open with no login.
 - Payments record a successful pay action in the response (no live Stripe keys).
 - Webhooks POST JSON on submit; a down endpoint does not fail the response.
-- Team invites are stored in the workspace (no outbound email provider).
-- Live collab uses presence heartbeats (not WebSockets). Identity is a per-tab workspace member because real login is optional in the brief.
+- Team invites send a real email with an accept link. The person is added only after they accept; ignore/revoke leaves them out.
+- Live collab uses presence heartbeats (not WebSockets). Identity is the signed-in account.
 
 ## Demo / deployment
 

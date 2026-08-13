@@ -90,6 +90,16 @@ export interface WorkspaceMember {
   created_at?: string;
 }
 
+export interface WorkspaceInvite {
+  id: number;
+  name: string;
+  email: string;
+  role: MemberRole;
+  status: "pending" | "accepted" | "revoked" | "expired";
+  created_at?: string;
+  expires_at?: string;
+}
+
 export interface FormEditor {
   name: string;
   email: string;

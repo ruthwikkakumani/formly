@@ -16,7 +16,7 @@ export function useBuilder(id: string) {
   const [activity, setActivity] = useState<FormActivity[]>([]);
   const [dirty, setDirty] = useState(false);
   const { toast, showToast } = useToast();
-  const { actor, current, members, switchUser } = useCurrentUser();
+  const { actor, current } = useCurrentUser();
   const loadedAt = useRef("");
   const dirtyRef = useRef(false);
   dirtyRef.current = dirty;
@@ -125,8 +125,6 @@ export function useBuilder(id: string) {
     editors,
     activity,
     current,
-    members,
-    switchUser,
     dirty,
     change,
     changeQuestion,

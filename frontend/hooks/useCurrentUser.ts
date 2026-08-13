@@ -2,42 +2,45 @@
 
 import { useEffect, useState } from "react";
 
-import { apiBase, teamApi } from "@/lib/api";
+import { authApi, teamApi } from "@/lib/api";
+import { clearToken, getToken } from "@/lib/auth";
 import { WorkspaceMember } from "@/lib/types";
-
-const KEY = "formly-current-user";
 
 export function useCurrentUser() {
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [current, setCurrent] = useState<WorkspaceMember>();
   const [error, setError] = useState("");
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    void teamApi
-      .list()
-      .then((list) => {
+    if (!getToken()) {
+      setReady(true);
+      return;
+    }
+    void Promise.all([authApi.me(), teamApi.list()])
+      .then(([user, list]) => {
+        setCurrent(user);
         setMembers(list);
         setError("");
-        const saved = sessionStorage.getItem(KEY);
-        setCurrent(list.find((member) => member.email === saved) || list[0]);
       })
-      .catch(() => {
-        setError(`Can't reach API at ${apiBase()}`);
-      });
+      .catch((err: Error) => {
+        setError(err.message);
+        clearToken();
+      })
+      .finally(() => setReady(true));
   }, []);
 
-  function switchUser(email: string) {
-    const next = members.find((member) => member.email === email);
-    if (!next) return;
-    sessionStorage.setItem(KEY, next.email);
-    setCurrent(next);
+  function logout() {
+    clearToken();
+    window.location.href = "/login";
   }
 
   return {
     members,
     current,
     error,
-    switchUser,
+    ready,
+    logout,
     actor: {
       actor_name: current?.name || "",
       actor_email: current?.email || "",

@@ -1,4 +1,5 @@
-import { FormActivity, FormDefinition, FormEditor, FormResponse, FormStats, WorkspaceMember } from "./types";
+import { authHeaders, getToken } from "./auth";
+import { FormActivity, FormDefinition, FormEditor, FormResponse, FormStats, WorkspaceInvite, WorkspaceMember } from "./types";
 
 declare global {
   interface Window {
@@ -14,18 +15,28 @@ export function apiBase(): string {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${apiBase()}${path}`, init);
+  const headers = new Headers(init?.headers);
+  const token = getToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const response = await fetch(`${apiBase()}${path}`, { ...init, headers });
+  if (response.status === 401 && typeof window !== "undefined" && !path.startsWith("/auth/")) {
+    window.localStorage.removeItem("formly-token");
+    if (!window.location.pathname.startsWith("/login") && !window.location.pathname.startsWith("/invite")) {
+      window.location.href = "/login";
+    }
+  }
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
     throw new Error(payload.detail || "Request failed");
   }
+  if (response.status === 204) return undefined as T;
   return response.json();
 }
 
 function json(method: string, body?: unknown): RequestInit {
   return {
     method,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: body === undefined ? undefined : JSON.stringify(body),
   };
 }
@@ -43,7 +54,17 @@ export const formsApi = {
     request<FormDefinition>(`/forms/${id}/publish`, json("POST", actor || {})),
   responses: (id: string | number) => request<FormResponse[]>(`/forms/${id}/responses`),
   stats: (id: string | number) => request<FormStats>(`/forms/${id}/stats`),
-  exportUrl: (id: string | number) => `${apiBase()}/forms/${id}/responses.csv`,
+  exportCsv: async (id: string | number) => {
+    const response = await fetch(`${apiBase()}/forms/${id}/responses.csv`, { headers: authHeaders() });
+    if (!response.ok) throw new Error("Export failed");
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `form-${id}-responses.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  },
   heartbeat: (id: string | number, actor: unknown) => request<FormEditor[]>(`/forms/${id}/presence`, json("POST", actor)),
   editors: (id: string | number) => request<FormEditor[]>(`/forms/${id}/presence`),
   activity: (id: string | number) => request<FormActivity[]>(`/forms/${id}/activity`),
@@ -51,9 +72,25 @@ export const formsApi = {
 
 export const teamApi = {
   list: () => request<WorkspaceMember[]>("/workspace/members"),
+  invites: () => request<WorkspaceInvite[]>("/workspace/invites"),
   invite: (body: { name: string; email: string; role: string }) =>
-    request<WorkspaceMember>("/workspace/members", json("POST", body)),
+    request<WorkspaceInvite>("/workspace/invites", json("POST", body)),
+  revokeInvite: (id: number) => request<{ ok: boolean }>(`/workspace/invites/${id}`, { method: "DELETE" }),
   remove: (id: number) => request<{ ok: boolean }>(`/workspace/members/${id}`, { method: "DELETE" }),
+};
+
+export const inviteApi = {
+  preview: (token: string) => request<{ name: string; email: string; role: string }>(`/invites/${token}`),
+  accept: (token: string, password: string) =>
+    request<{ token: string; user: WorkspaceMember }>(`/invites/${token}/accept`, json("POST", { password })),
+};
+
+export const authApi = {
+  register: (body: { name: string; email: string; password: string }) =>
+    request<{ token: string; user: WorkspaceMember }>("/auth/register", json("POST", body)),
+  login: (body: { email: string; password: string }) =>
+    request<{ token: string; user: WorkspaceMember }>("/auth/login", json("POST", body)),
+  me: () => request<WorkspaceMember>("/auth/me"),
 };
 
 export const publicFormsApi = {

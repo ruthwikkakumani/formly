@@ -7,8 +7,6 @@ export function BuilderHeader({
   tab,
   editors,
   current,
-  members,
-  onSwitchUser,
   dirty,
   onTab,
   onTitle,
@@ -20,8 +18,6 @@ export function BuilderHeader({
   tab: "Build" | "Results" | "Settings";
   editors: FormEditor[];
   current?: WorkspaceMember;
-  members: WorkspaceMember[];
-  onSwitchUser: (email: string) => void;
   dirty: boolean;
   onTab: (tab: "Build" | "Results" | "Settings") => void;
   onTitle: (title: string) => void;
@@ -29,7 +25,9 @@ export function BuilderHeader({
   onPublish: () => void;
   onCopyLink: () => void;
 }) {
-  const others = editors.filter((editor) => editor.email !== current?.email.toLowerCase() && editor.email !== current?.email);
+  const others = editors.filter(
+    (editor) => editor.email !== current?.email.toLowerCase() && editor.email !== current?.email,
+  );
 
   return (
     <header className="builderhead">
@@ -44,27 +42,12 @@ export function BuilderHeader({
       />
       <div className="presence">
         {others.length ? (
-          <span className="livepill">
-            {others.map((editor) => editor.name).join(", ")} editing
-          </span>
+          <span className="livepill">{others.map((editor) => editor.name).join(", ")} editing</span>
         ) : (
           <span className="livepill quiet">Only you</span>
         )}
-        <span className="savedby">
-          {dirty ? "Unsaved changes" : `Last saved by ${form.updated_by || "—"}`}
-        </span>
-        <select
-          className="whoami"
-          value={current?.email || ""}
-          onChange={(event) => onSwitchUser(event.target.value)}
-          aria-label="Who is editing"
-        >
-          {members.map((member) => (
-            <option value={member.email} key={member.id}>
-              {member.name}
-            </option>
-          ))}
-        </select>
+        <span className="savedby">{dirty ? "Unsaved changes" : `Last saved by ${form.updated_by || "—"}`}</span>
+        <span className="whoami">{current?.name}</span>
       </div>
       <nav>
         {(["Build", "Results", "Settings"] as const).map((item) => (

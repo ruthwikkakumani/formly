@@ -31,6 +31,15 @@ class Settings(BaseSettings):
     upload_dir: Path = Path("uploads")
     cors_origins: str = Field(default="http://localhost:3000,http://127.0.0.1:3000")
     cors_origin_regex: str = r"https://.*\.(vercel\.app|netlify\.app|onrender\.com|up\.railway\.app|railway\.app|rdrt\.dev)"
+    frontend_url: str = "http://localhost:3000"
+    auth_secret: str = "formly-change-me"
+    resend_api_key: str = ""
+    invite_from_email: str = "Formly <onboarding@resend.dev>"
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @property

@@ -13,4 +13,5 @@ class Member(Base):
     name: Mapped[str] = mapped_column(String(120))
     email: Mapped[str] = mapped_column(String(180), unique=True, index=True)
     role: Mapped[str] = mapped_column(String(20), default="editor")
+    password_hash: Mapped[str] = mapped_column(String(200), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

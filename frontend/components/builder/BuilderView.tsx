@@ -23,8 +23,6 @@ export function BuilderView({ id }: { id: string }) {
         tab={builder.tab}
         editors={builder.editors}
         current={builder.current}
-        members={builder.members}
-        onSwitchUser={builder.switchUser}
         dirty={builder.dirty}
         onTab={builder.setTab}
         onTitle={(title) => builder.change({ title })}

@@ -1,11 +1,10 @@
 from sqlalchemy.orm import Session
 
 from app.core.constants import THEME_DEFAULTS
-from app.models import Answer, Form, Member, Question, Response
+from app.models import Answer, Form, Question, Response
 
 
 def seed_database(db: Session) -> None:
-    _seed_members(db)
     if db.query(Form).first():
         return
 
@@ -118,13 +117,3 @@ def seed_database(db: Session) -> None:
     db.commit()
 
 
-def _seed_members(db: Session) -> None:
-    if db.query(Member).first():
-        return
-    db.add_all(
-        [
-            Member(name="Ruthwik Kakumani", email="ruthwik@formly.app", role="owner"),
-            Member(name="Alex Rivera", email="alex@formly.app", role="editor"),
-        ]
-    )
-    db.commit()

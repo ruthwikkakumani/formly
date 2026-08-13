@@ -30,13 +30,13 @@ App: http://localhost:3000
 Public form (no login): http://localhost:3000/f/product-feedback  
 Team: http://localhost:3000/team  
 
-Live collab demo: open the same form in two tabs, pick a different teammate in each, Save in one — the other tab shows who is editing and applies the live save.
+Live collab demo: sign in as two different accounts (two browsers), open the same form, Save in one — the other shows who is editing.
 
 ## 3. Seeded data (first API start)
 
 - Published: Product feedback, Remote work pulse  
 - Draft: New customer interview  
-- Workspace members: owner + editor  
+- No fake members. Create the owner at `/register`, then invite teammates.  
 
 If you need a clean seed:
 
@@ -65,6 +65,20 @@ git push -u origin master
 2. Dockerfile is already in `backend/Dockerfile`
 3. Add a persistent disk for `typeform.db` and `uploads/`
 4. Set `CORS_ORIGINS=https://formly.rdrt.dev` (plain URL, not JSON)
+5. Set `FRONTEND_URL=https://formly.rdrt.dev`
+6. Set email so invites actually send (pick one):
+
+Gmail (fastest): create an App Password, then
+
+```
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=you@gmail.com
+SMTP_PASSWORD=your-16-char-app-password
+SMTP_FROM=Formly <you@gmail.com>
+```
+
+Or Resend: `RESEND_API_KEY=re_...` and `INVITE_FROM_EMAIL=Formly <onboarding@resend.dev>` (only delivers to your Resend account email until you verify `rdrt.dev`).
 
 ### Frontend (Vercel)
 

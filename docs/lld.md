@@ -30,7 +30,10 @@ Public fill never touches creator-only screens. It only calls `/api/public/{slug
 | `ResponseService` | submit, partial save, stats, CSV rows, file upload |
 | `validation_service` | required / email / number / choice / payment; logic-jump path walk |
 | `webhook_service` | fire-and-forget POST on submit |
-| `TeamService` | invite / list / remove workspace members |
+| `AuthService` | register (first user = owner), login, JWT |
+| `TeamService` | list / remove accepted members |
+| `InviteService` | pending email invites; accept creates a real account |
+| `email_service` | Resend or SMTP invite mail |
 | `CollaborationService` | presence heartbeat, active editors, activity log |
 | `seed.py` | two published forms + responses + owner/editor members |
 
@@ -102,7 +105,7 @@ SQLite file `backend/typeform.db`. JSON columns: `theme`, `options`, `logic`, pa
 
 ## 8. Auth assumption
 
-Assignment allows a default logged-in creator. There is one workspace. Public fill has **zero** auth.
+Creators sign in with email/password (JWT). First register is owner; others join only by accepting an invite. Public fill has **zero** auth.
 
 ## 9. Live collaboration
 

@@ -1,6 +1,7 @@
 from app.models.activity import FormActivity
 from app.models.answer import Answer
 from app.models.form import Form
+from app.models.invite import WorkspaceInvite
 from app.models.member import Member
 from app.models.partial_response import PartialResponse
 from app.models.presence import FormPresence
@@ -16,4 +17,5 @@ __all__ = [
     "PartialResponse",
     "Question",
     "Response",
+    "WorkspaceInvite",
 ]

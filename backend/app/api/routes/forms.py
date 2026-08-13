@@ -4,14 +4,15 @@ import io
 from fastapi import APIRouter, Body, Depends, Response
 from sqlalchemy.orm import Session
 
-from app.api.deps import form_service, response_service
+from app.api.deps import form_service, get_current_user, response_service
 from app.db.session import get_db
+from app.models import Member
 from app.schemas.form import ActorActionPayload, FormPayload, PresencePayload, RenamePayload
 from app.services.collaboration_service import CollaborationService
 
 collab = CollaborationService()
 
-router = APIRouter(prefix="/forms", tags=["forms"])
+router = APIRouter(prefix="/forms", tags=["forms"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("")
@@ -20,7 +21,9 @@ def list_forms(db: Session = Depends(get_db)):
 
 
 @router.post("")
-def create_form(payload: FormPayload, db: Session = Depends(get_db)):
+def create_form(payload: FormPayload, db: Session = Depends(get_db), user: Member = Depends(get_current_user)):
+    payload.actor_name = user.name
+    payload.actor_email = user.email
     return form_service.serialize(form_service.create(db, payload))
 
 
@@ -30,15 +33,15 @@ def get_form(form_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/{form_id}")
-def update_form(form_id: int, payload: FormPayload, db: Session = Depends(get_db)):
+def update_form(form_id: int, payload: FormPayload, db: Session = Depends(get_db), user: Member = Depends(get_current_user)):
+    payload.actor_name = user.name
+    payload.actor_email = user.email
     return form_service.serialize(form_service.update(db, form_id, payload))
 
 
 @router.patch("/{form_id}")
-def rename_form(form_id: int, payload: RenamePayload, db: Session = Depends(get_db)):
-    return form_service.serialize(
-        form_service.rename(db, form_id, payload.title, payload.actor_name, payload.actor_email)
-    )
+def rename_form(form_id: int, payload: RenamePayload, db: Session = Depends(get_db), user: Member = Depends(get_current_user)):
+    return form_service.serialize(form_service.rename(db, form_id, payload.title, user.name, user.email))
 
 
 @router.delete("/{form_id}")
@@ -57,16 +60,15 @@ def toggle_publish(
     form_id: int,
     payload: ActorActionPayload = Body(default_factory=ActorActionPayload),
     db: Session = Depends(get_db),
+    user: Member = Depends(get_current_user),
 ):
-    return form_service.serialize(
-        form_service.toggle_publish(db, form_id, payload.actor_name, payload.actor_email)
-    )
+    return form_service.serialize(form_service.toggle_publish(db, form_id, user.name, user.email))
 
 
 @router.post("/{form_id}/presence")
-def heartbeat(form_id: int, payload: PresencePayload, db: Session = Depends(get_db)):
+def heartbeat(form_id: int, payload: PresencePayload, db: Session = Depends(get_db), user: Member = Depends(get_current_user)):
     form_service.require(db, form_id)
-    return collab.heartbeat(db, form_id, payload.actor_name, payload.actor_email)
+    return collab.heartbeat(db, form_id, user.name, user.email)
 
 
 @router.get("/{form_id}/presence")

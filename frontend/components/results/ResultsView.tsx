@@ -24,9 +24,9 @@ export function ResultsView({ id, questions }: { id: string; questions: Question
         <h2>
           Responses <span>{responses.length}</span>
         </h2>
-        <a className="save" href={formsApi.exportUrl(id)}>
+        <button className="save" type="button" onClick={() => void formsApi.exportCsv(id)}>
           Export CSV
-        </a>
+        </button>
       </div>
       <p className="completion">
         Completion rate: <b>{stats?.completion.rate || 0}%</b> · {stats?.completion.completed || 0} completed ·{" "}
