@@ -92,27 +92,41 @@ export function useBuilder(id: string) {
 
   async function save() {
     if (!form) return;
-    const saved = await formsApi.update(id, { ...form, ...actor });
-    setForm(saved);
-    loadedAt.current = saved.updated_at || "";
-    setDirty(false);
-    setActivity(await formsApi.activity(id));
-    showToast(`Saved by ${current?.name || "you"}`);
+    try {
+      const saved = await formsApi.update(id, { ...form, ...actor });
+      setForm(saved);
+      loadedAt.current = saved.updated_at || "";
+      setDirty(false);
+      setActivity(await formsApi.activity(id));
+      showToast(`Saved by ${current?.name || "you"}`);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "We couldn't save just now. Please try again.");
+      throw err;
+    }
   }
 
   async function publish() {
     if (!form) return;
-    const next = await formsApi.togglePublish(id, actor);
-    setForm(next);
-    loadedAt.current = next.updated_at || "";
-    setActivity(await formsApi.activity(id));
-    showToast(form.status === "draft" ? "Your form is live" : "Form unpublished");
+    try {
+      if (dirtyRef.current) await save();
+      const next = await formsApi.togglePublish(id, actor);
+      setForm(next);
+      loadedAt.current = next.updated_at || "";
+      setActivity(await formsApi.activity(id));
+      showToast(form.status === "draft" ? "Your form is live" : "Form unpublished");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "We couldn't update publish status. Please try again.");
+    }
   }
 
   async function copyLink() {
     if (!form) return;
-    await navigator.clipboard.writeText(`${window.location.origin}/f/${form.slug}`);
-    showToast("Share link copied");
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/f/${form.slug}`);
+      showToast("Share link copied");
+    } catch {
+      showToast("Couldn't copy the link. Select it from the address bar instead.");
+    }
   }
 
   return {

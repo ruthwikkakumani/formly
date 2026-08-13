@@ -170,8 +170,34 @@
 
 .publicchoices button.chosen,
 .rating .chosen {
+  background: var(--accent, #0445af);
+  color: #fff;
+}
+
+.askactions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 23px;
+}
+
+.askactions .ok {
+  margin-top: 0;
+}
+
+.fillnav {
+  display: flex;
+  gap: 6px;
+}
+
+.fillnav button {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
   background: #191919;
   color: #fff;
+  font-size: 16px;
 }
 
 .publicchoices b {

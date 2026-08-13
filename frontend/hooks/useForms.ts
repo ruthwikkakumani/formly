@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { apiBase, formsApi } from "@/lib/api";
+import { formsApi } from "@/lib/api";
 import { createQuestion } from "@/lib/constants";
 import { FormDefinition } from "@/lib/types";
 import { useCurrentUser } from "./useCurrentUser";
@@ -19,8 +19,8 @@ export function useForms() {
     try {
       setForms(await formsApi.list());
       setError("");
-    } catch {
-      setError(`Can't reach API at ${apiBase()}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "We couldn't load your forms.");
     } finally {
       setLoading(false);
     }
@@ -30,42 +30,60 @@ export function useForms() {
     void load();
   }, [load]);
 
+  async function run(action: () => Promise<void>, ok: string) {
+    try {
+      await action();
+      showToast(ok);
+      await load();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    }
+  }
+
   async function createForm() {
-    const form = await formsApi.create({
-      title: "Untitled form",
-      questions: [createQuestion("short_text")],
-      ...actor,
-    });
-    window.location.href = `/builder/${form.id}`;
+    try {
+      const form = await formsApi.create({
+        title: "Untitled form",
+        description: "",
+        questions: [createQuestion("short_text")],
+        ...actor,
+      });
+      window.location.href = `/builder/${form.id}`;
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "We couldn't create the form. Please try again.");
+    }
   }
 
   async function renameForm(id: number, title: string) {
-    await formsApi.rename(id, title, actor);
-    showToast("Form renamed");
-    await load();
+    await run(() => formsApi.rename(id, title, actor).then(() => undefined), "Form renamed");
   }
 
   async function duplicateForm(id: number) {
-    await formsApi.duplicate(id);
-    showToast("Form duplicated");
-    await load();
+    await run(() => formsApi.duplicate(id).then(() => undefined), "Form duplicated");
   }
 
   async function togglePublish(form: FormDefinition) {
-    await formsApi.togglePublish(form.id, actor);
-    showToast(form.status === "draft" ? "Form published" : "Form unpublished");
-    await load();
+    await run(
+      () => formsApi.togglePublish(form.id, actor).then(() => undefined),
+      form.status === "draft" ? "Form published" : "Form unpublished",
+    );
   }
 
   async function deleteForm(id: number) {
-    await formsApi.remove(id);
-    showToast("Form deleted");
-    await load();
+    await run(() => formsApi.remove(id).then(() => undefined), "Form deleted");
   }
 
   async function copyLink(slug: string) {
-    await navigator.clipboard.writeText(`${window.location.origin}/f/${slug}`);
-    showToast("Share link copied");
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/f/${slug}`);
+      showToast("Share link copied");
+    } catch {
+      showToast("Couldn't copy the link. Please copy it from the browser instead.");
+    }
+  }
+
+  function templatesSoon() {
+    showToast("Templates are coming soon");
   }
 
   return {
@@ -79,5 +97,6 @@ export function useForms() {
     togglePublish,
     deleteForm,
     copyLink,
+    templatesSoon,
   };
 }

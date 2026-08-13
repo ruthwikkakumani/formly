@@ -1,4 +1,5 @@
 import { Modal } from "@/components/shared/Modal";
+import { isUploadUrl } from "@/lib/answers";
 import { FormResponse, Question } from "@/lib/types";
 
 export function ResponseModal({
@@ -17,7 +18,19 @@ export function ResponseModal({
       {questions.map((question) => (
         <div className="answer" key={question.id}>
           <b>{question.title}</b>
-          <p>{(question.id && response.answers[question.id]) || "No answer"}</p>
+          <p>
+            {question.id && response.answers[question.id] ? (
+              isUploadUrl(response.answers[question.id]) ? (
+                <a href={response.answers[question.id]} target="_blank" rel="noreferrer">
+                  Open uploaded file
+                </a>
+              ) : (
+                response.answers[question.id]
+              )
+            ) : (
+              "No answer"
+            )}
+          </p>
         </div>
       ))}
     </Modal>

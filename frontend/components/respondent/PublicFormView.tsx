@@ -48,13 +48,13 @@ export function PublicFormView({ slug }: { slug: string }) {
           <QuestionScreen
             question={flow.question}
             index={flow.index}
-            total={flow.form.questions.length}
             value={flow.question.id ? flow.answers[flow.question.id] || "" : ""}
             error={flow.error}
             slug={slug}
             direction={flow.direction}
             onChange={flow.setAnswer}
             onNext={flow.advance}
+            onBack={flow.back}
           />
         </>
       )}

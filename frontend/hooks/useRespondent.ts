@@ -99,14 +99,26 @@ export function useRespondent(slug: string) {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (step === "error" || step === "thanks" || step === "loading") return;
-      if (["Enter", "ArrowRight", "ArrowDown"].includes(event.key)) {
-        if (question?.type === "long_text" && event.key === "Enter" && !event.metaKey && !event.ctrlKey) return;
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName;
+      const inputType = (target as HTMLInputElement | null)?.type;
+      const nativeArrows = tag === "SELECT" || tag === "TEXTAREA" || inputType === "number" || inputType === "file";
+      if (event.key === "Enter") {
+        if (question?.type === "long_text" && !event.metaKey && !event.ctrlKey) return;
+        if (inputType === "file") return;
         event.preventDefault();
         advance();
+        return;
       }
-      if (["ArrowLeft", "ArrowUp"].includes(event.key) && step === "question") {
+      if (event.key === "ArrowRight" || (event.key === "ArrowDown" && !nativeArrows)) {
+        event.preventDefault();
+        advance();
+        return;
+      }
+      if (step === "question" && (event.key === "ArrowLeft" || (event.key === "ArrowUp" && !nativeArrows))) {
         event.preventDefault();
         back();
+        return;
       }
       if (question && ["multiple_choice", "yes_no"].includes(question.type) && /^[a-z]$/i.test(event.key)) {
         const options = question.type === "yes_no" ? ["Yes", "No"] : question.options;

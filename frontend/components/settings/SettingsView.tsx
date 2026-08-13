@@ -19,6 +19,22 @@ export function SettingsView({
       <p>Theme, thank-you screen, and integrations for this form.</p>
       <div className="settingsgrid">
         <article>
+          <h3>Form details</h3>
+          <p className="hint">Shown on the welcome screen and on your workspace cards.</p>
+          <label>
+            Description
+            <input
+              type="text"
+              value={form.description || ""}
+              onChange={(event) => onChange({ description: event.target.value })}
+              placeholder="A few questions. Honest answers."
+            />
+          </label>
+          <button className="primary" onClick={onSave}>
+            Save details
+          </button>
+        </article>
+        <article>
           <h3>Theme</h3>
           <label>
             Background

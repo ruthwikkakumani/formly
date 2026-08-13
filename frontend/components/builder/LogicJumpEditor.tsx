@@ -24,7 +24,7 @@ export function LogicJumpEditor({
   return (
     <div className="logic">
       <b>Logic jumps</b>
-      <p>Branch to another question or the thank-you screen based on the answer.</p>
+      <p>Branch to another question or the thank-you screen based on the answer. Save first to jump to a newly added question.</p>
       {rules.map((rule, index) => (
         <div className="logicrule" key={index}>
           <select

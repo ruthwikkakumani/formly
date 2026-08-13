@@ -99,6 +99,7 @@ class FormService:
             title=f"{source.title} (copy)",
             description=source.description,
             theme=source.theme,
+            webhook_url=source.webhook_url,
             status="draft",
             slug=uuid4().hex[:10],
         )

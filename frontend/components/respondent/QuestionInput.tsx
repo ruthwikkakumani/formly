@@ -51,7 +51,12 @@ export function QuestionInput({
           onChange={async (event) => {
             const file = event.target.files?.[0];
             if (!file) return;
-            onChange(await publicFormsApi.upload(slug, file));
+            try {
+              onChange(await publicFormsApi.upload(slug, file));
+            } catch (err) {
+              onChange("");
+              window.alert(err instanceof Error ? err.message : "We couldn't upload that file.");
+            }
           }}
         />
         {value && <p>✓ File attached</p>}
@@ -88,7 +93,9 @@ export function QuestionInput({
       <select autoFocus value={value} onChange={(event) => onChange(event.target.value)}>
         <option value="">Choose an answer</option>
         {question.options.map((option) => (
-          <option key={option}>{option}</option>
+          <option value={option} key={option}>
+            {option}
+          </option>
         ))}
       </select>
     );

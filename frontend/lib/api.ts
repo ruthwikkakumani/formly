@@ -25,9 +25,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   } catch (error) {
     throw new Error(messageFromNetworkError(error));
   }
-  if (response.status === 401 && typeof window !== "undefined" && !path.startsWith("/auth/")) {
+  if (
+    response.status === 401 &&
+    typeof window !== "undefined" &&
+    !path.startsWith("/auth/") &&
+    !path.startsWith("/public/") &&
+    !path.startsWith("/invites/")
+  ) {
     window.localStorage.removeItem("formly-token");
-    if (!window.location.pathname.startsWith("/login") && !window.location.pathname.startsWith("/invite")) {
+    const route = window.location.pathname;
+    if (!["/login", "/register", "/invite", "/f/"].some((prefix) => route.startsWith(prefix))) {
       window.location.href = "/login";
     }
   }

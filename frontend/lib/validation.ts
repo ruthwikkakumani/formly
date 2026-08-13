@@ -7,7 +7,8 @@ export function validateAnswer(question: Question, value: string): string | null
   if (question.required && !answer) return "Please fill this in";
   if (!answer) return null;
   if (question.type === "email" && !EMAIL.test(answer)) return "Hmm… that email doesn’t look valid";
-  if (question.type === "number" && Number.isNaN(Number(answer))) return "Please enter a number";
+  if (question.type === "number" && !Number.isFinite(Number(answer))) return "Please enter a number";
+  if (question.type === "rating" && !["1", "2", "3", "4", "5"].includes(answer)) return "Please choose a rating from 1 to 5";
   if (question.type === "payment" && !answer.startsWith("Paid")) return "Please complete the payment to continue";
   return null;
 }
