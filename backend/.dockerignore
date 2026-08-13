@@ -1,0 +1,11 @@
+.venv
+__pycache__
+**/__pycache__
+*.pyc
+.typeform.db
+typeform.db
+uploads
+.env
+.git
+*.md
+render.yaml

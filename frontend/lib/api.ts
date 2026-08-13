@@ -1,9 +1,20 @@
 import { FormActivity, FormDefinition, FormEditor, FormResponse, FormStats, WorkspaceMember } from "./types";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+declare global {
+  interface Window {
+    __FORMLY_API__?: string;
+  }
+}
+
+function apiBase(): string {
+  if (typeof window !== "undefined" && window.__FORMLY_API__) {
+    return window.__FORMLY_API__.replace(/\/$/, "");
+  }
+  return (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api").replace(/\/$/, "");
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API}${path}`, init);
+  const response = await fetch(`${apiBase()}${path}`, init);
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
     throw new Error(payload.detail || "Request failed");
@@ -32,7 +43,7 @@ export const formsApi = {
     request<FormDefinition>(`/forms/${id}/publish`, json("POST", actor || {})),
   responses: (id: string | number) => request<FormResponse[]>(`/forms/${id}/responses`),
   stats: (id: string | number) => request<FormStats>(`/forms/${id}/stats`),
-  exportUrl: (id: string | number) => `${API}/forms/${id}/responses.csv`,
+  exportUrl: (id: string | number) => `${apiBase()}/forms/${id}/responses.csv`,
   heartbeat: (id: string | number, actor: unknown) => request<FormEditor[]>(`/forms/${id}/presence`, json("POST", actor)),
   editors: (id: string | number) => request<FormEditor[]>(`/forms/${id}/presence`),
   activity: (id: string | number) => request<FormActivity[]>(`/forms/${id}/activity`),
@@ -54,6 +65,6 @@ export const publicFormsApi = {
     const data = new FormData();
     data.append("file", file);
     const result = await request<{ url: string }>(`/public/${slug}/upload`, { method: "POST", body: data });
-    return `${API.replace(/\/api$/, "")}${result.url}`;
+    return `${apiBase().replace(/\/api$/, "")}${result.url}`;
   },
 };
