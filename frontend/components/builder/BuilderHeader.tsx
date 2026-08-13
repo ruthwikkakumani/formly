@@ -47,7 +47,6 @@ export function BuilderHeader({
           <span className="livepill quiet">Only you</span>
         )}
         <span className="savedby">{dirty ? "Unsaved changes" : `Last saved by ${form.updated_by || "—"}`}</span>
-        <span className="whoami">{current?.name}</span>
       </div>
       <nav>
         {(["Build", "Results", "Settings"] as const).map((item) => (

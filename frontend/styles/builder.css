@@ -5,25 +5,40 @@
 }
 
 .builderhead {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  height: 56px;
+  min-height: 56px;
+  overflow: hidden;
   background: var(--surface);
   padding: 0 24px;
   border-bottom: 1px solid var(--line);
-  gap: 18px;
+  gap: 14px;
 }
 
 .titleinput {
   border: 0;
-  max-width: 280px;
+  max-width: 220px;
+  min-width: 0;
+  flex-shrink: 1;
   font-size: 15px;
   font-weight: 600;
   outline: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .presence {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 160px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 .livepill {
@@ -34,6 +49,8 @@
   border-radius: 999px;
   padding: 4px 8px;
   width: fit-content;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .livepill.quiet {
@@ -45,13 +62,10 @@
 .savedby {
   font-size: 11px;
   color: var(--muted);
-}
-
-.whoami {
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 4px 6px;
-  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .activity {
@@ -78,7 +92,14 @@
 .builderhead nav {
   margin-left: auto;
   display: flex;
+  flex-shrink: 0;
   gap: 4px;
+}
+
+.builderhead .save,
+.builderhead .primary {
+  flex-shrink: 0;
+  padding: 8px 12px;
 }
 
 .builderhead nav button {
@@ -460,6 +481,12 @@
   font-size: 28px;
   margin-top: 25px;
   color: #6558f5;
+}
+
+@media (max-width: 1100px) {
+  .savedby {
+    display: none;
+  }
 }
 
 @media (max-width: 1050px) {

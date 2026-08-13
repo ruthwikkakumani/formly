@@ -167,8 +167,7 @@
 }
 
 .apphead,
-.dashboard header,
-.builderhead {
+.dashboard header {
   min-height: 56px;
   display: flex;
   align-items: center;
