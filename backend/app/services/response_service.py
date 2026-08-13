@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.constants import CHOICE_TYPES, MAX_UPLOAD_BYTES
-from app.models import PartialResponse, Response
+from app.models import Answer, PartialResponse, Response
 from app.repositories.form_repository import FormRepository
 from app.repositories.response_repository import ResponseRepository
 from app.schemas.submission import PartialPayload, SubmissionPayload
@@ -71,6 +71,8 @@ class ResponseService:
         form = self.forms.require_public(db, slug)
         partial = self.repo.get_partial(db, payload.visitor_id)
         if partial:
+            if partial.form_id != form.id:
+                raise HTTPException(status_code=404, detail="We couldn't find that form. It may have been removed.")
             partial.answers = payload.answers
         else:
             db.add(
@@ -81,6 +83,14 @@ class ResponseService:
                 )
             )
         db.commit()
+
+    def load_partial(self, db: Session, slug: str, visitor_id: str) -> dict:
+        form = self.forms.require_public(db, slug)
+        partial = self.repo.get_partial(db, visitor_id)
+        if not partial or partial.form_id != form.id:
+            return {"answers": {}}
+        raw = partial.answers or {}
+        return {"answers": {str(key): "" if value is None else str(value) for key, value in raw.items()}}
 
     def _stats_from(self, form, responses: list[Response], in_progress: int) -> dict:
         values_by_question: dict[int, list[str]] = {}

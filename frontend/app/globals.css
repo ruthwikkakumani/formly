@@ -77,12 +77,26 @@ a {
   color: inherit;
 }
 
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([readonly]):not(.titleinput):focus,
-select:focus,
-textarea:focus {
+:where(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([readonly]):not(.titleinput):not(.description)
+):focus,
+:where(select):focus,
+:where(textarea:not(.description):not(.questiontitle)):focus {
   outline: none;
   border-color: var(--ink);
   box-shadow: 0 0 0 3px #19191914;
+}
+
+.ask input:focus,
+.ask input:focus-visible,
+.ask textarea:focus,
+.ask textarea:focus-visible,
+.ask select:focus,
+.ask select:focus-visible,
+.description:focus,
+.questiontitle:focus {
+  outline: none;
+  box-shadow: none;
 }
 
 button,

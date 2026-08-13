@@ -178,8 +178,12 @@ export const authApi = {
 export const publicFormsApi = {
   get: (slug: string) => request<FormDefinition>(`/public/${slug}`),
   submit: (slug: string, body: unknown) => request<{ id: number }>(`/public/${slug}/responses`, json("POST", body)),
-  savePartial: (slug: string, body: unknown) =>
-    request<{ ok: boolean }>(`/public/${slug}/partial`, json("POST", body)),
+  getPartial: (slug: string, visitorId: string) =>
+    request<{ answers: Record<string, string> }>(
+      `/public/${slug}/partial?visitor_id=${encodeURIComponent(visitorId)}`,
+    ),
+  savePartial: (slug: string, body: unknown, signal?: AbortSignal) =>
+    request<{ ok: boolean }>(`/public/${slug}/partial`, { ...json("POST", body), signal }),
   upload: async (slug: string, file: File) => {
     const data = new FormData();
     data.append("file", file);

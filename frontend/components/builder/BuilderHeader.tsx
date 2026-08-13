@@ -91,9 +91,15 @@ export function BuilderHeader({
           )}
           <span
             className="savedby"
-            title={dirty ? "Unsaved changes" : `Last saved by ${form.updated_by || "—"}`}
+            title={
+              saving
+                ? "Saving changes"
+                : dirty
+                  ? "Unsaved changes"
+                  : `Last saved by ${form.updated_by || "—"}`
+            }
           >
-            {dirty ? "Unsaved changes" : `Last saved by ${form.updated_by || "—"}`}
+            {saving ? "Saving…" : dirty ? "Unsaved changes" : `Last saved by ${form.updated_by || "—"}`}
           </span>
         </div>
         <div className="builderactions">

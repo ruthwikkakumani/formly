@@ -428,9 +428,9 @@
 }
 
 .canvasmeta {
-  font-size: 15px;
-  font-weight: 600;
+  font: 600 16px "DM Sans", sans-serif;
   margin: 0 0 8px;
+  color: var(--accent, #6558f5);
 }
 
 .canvasanswer {
@@ -438,7 +438,7 @@
 }
 
 .canvas .ok {
-  margin-top: 28px;
+  margin-top: 23px;
 }
 
 .canvascaption {
@@ -906,11 +906,19 @@
   width: 100%;
   border: 0;
   background: transparent;
-  font: 500 31px/1.2 Fraunces, serif;
+  font: 500 44px/1.16 Fraunces, serif;
+  letter-spacing: -1.3px;
   resize: none;
   min-height: 94px;
   outline: 0;
-  margin-top: 17px;
+  box-shadow: none;
+  margin: 20px 0 8px;
+}
+
+.questiontitle:focus,
+.questiontitle:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 .description {
@@ -921,7 +929,15 @@
   padding: 8px 0;
   outline: none;
   resize: none;
-  color: var(--muted);
+  color: #666;
+  font-size: 17px;
+  box-shadow: none;
+}
+
+.description:focus,
+.description:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 .editbottom {
@@ -1044,9 +1060,11 @@
 }
 
 .fakeinput {
+  border: 0;
   border-bottom: 2px solid #777;
+  background: transparent;
   height: 32px;
-  margin-top: 28px;
+  margin-top: 26px;
 }
 
 .multiline {
@@ -1054,13 +1072,16 @@
 }
 
 .phone > button,
-.ok {
+.ok,
+.askactions .ok,
+.canvas .ok {
   margin-top: 23px;
   background: var(--ok);
   color: #fff;
   padding: 9px 13px;
   border-radius: 6px;
   font-size: 12px;
+  font-weight: 600;
 }
 
 .phone .fillnav {

@@ -29,7 +29,7 @@ Public fill never touches creator-only screens. It only calls `/api/public/{slug
 | Module | Responsibility |
 |---|---|
 | `FormService` | create, update (sync questions by id), rename, duplicate, publish toggle, stamp `updated_by`, serialize |
-| `ResponseService` | submit, partial save, stats, CSV rows, file upload |
+| `ResponseService` | submit, partial save/load, combined results, stats, CSV rows, file upload |
 | `validation_service` | required / email / number / choice / payment; logic-jump path walk |
 | `webhook_service` | fire-and-forget POST on submit |
 | `AuthService` | register (first **owner** only; later registers 403 — seeded reviewer does not count as owner), login, JWT, profile/password, forgot + reset token |
@@ -53,8 +53,8 @@ Public fill never touches creator-only screens. It only calls `/api/public/{slug
 | `useForms` | dashboard | list, create, rename, duplicate, publish, delete + **create from template** |
 | `TemplatesGallery` | dashboard Templates tab | starter kits → `POST /forms` |
 | `useBuilder` | `/builder/[id]` | get, update, publish, heartbeat, leave, poll remote saves |
-| `ResultsView` | builder Results tab | insight cards (`QuestionInsight`: bars, yes/no segments, rating columns) + wrapping table with sticky Submitted + CSV |
-| `useRespondent` | `/f/[slug]` | public get, partial, submit, upload |
+| `ResultsView` | builder Results tab | `GET /forms/{id}/results` → donut + legend for choices, rating columns, open-text snippets + wrapping table + CSV |
+| `useRespondent` | `/f/[slug]` | public get, restore draft (`fillDraft` + `GET /partial`), save partial, submit, upload |
 | TeamView | `/team` and `/settings#team` | members; owner-only invite + role dropdown (viewer ↔ editor) + copy link even when email fails |
 | SettingsWorkspace | `/settings` | right-side Account / Password / Team buttons; one panel at a time |
 | AccountSettings | `/settings` | change display name (`PATCH /auth/me`) and password (`POST /auth/password`) |
@@ -64,11 +64,11 @@ Public fill never touches creator-only screens. It only calls `/api/public/{slug
 | `lib/errors.ts` | all surfaces | situation-specific copy (auth, invite, timeout, network, SMTP) |
 | `lib/access.ts` | team / settings / builder | `isOwner()`, `isViewer()`, `canEditForms()` |
 
-Builder tabs: **Build** (sortable list + canvas + question editor) · **Results** (insight cards with bar/segment/rating charts + wrapping table + CSV) · **Settings** (form description textarea, theme, thank-you, webhook, activity).
+Builder tabs: **Build** (sortable list + canvas + question editor) · **Results** (donut/rating insight cards + wrapping table + CSV) · **Settings** (form description textarea, theme, thank-you, webhook, activity).
 
 Workspace shell: **Home** · **Workspace** (`/team`) · **Settings** (`/settings`).
 
-Respondent steps: `loading → welcome → question* → thanks | error`.
+Respondent steps: `loading → welcome → question* → thanks | error`. A refresh restores `question` (and answers) from `localStorage` plus `GET /api/public/{slug}/partial` when a visitor id exists. After submit, that browser tab shows thank-you (`sessionStorage`); a later visit can start a new response.
 
 ## 5. API map
 
@@ -86,6 +86,7 @@ Respondent steps: `loading → welcome → question* → thanks | error`.
 | POST | `/api/forms/{id}/publish` | draft ↔ published |
 | GET | `/api/forms/{id}/responses` | table |
 | GET | `/api/forms/{id}/stats` | counts + completion |
+| GET | `/api/forms/{id}/results` | responses + stats in one payload (Results tab poll) |
 | GET | `/api/forms/{id}/responses.csv` | export |
 | POST | `/api/forms/{id}/presence` | I am editing (heartbeat every 4s) |
 | DELETE | `/api/forms/{id}/presence` | leave builder — row is removed |
@@ -97,7 +98,8 @@ Respondent steps: `loading → welcome → question* → thanks | error`.
 | Method | Path | Use |
 |---|---|---|
 | GET | `/api/public/{slug}` | published form only |
-| POST | `/api/public/{slug}/partial` | in-progress answers |
+| GET | `/api/public/{slug}/partial?visitor_id=` | restore in-progress answers |
+| POST | `/api/public/{slug}/partial` | upsert in-progress answers |
 | POST | `/api/public/{slug}/responses` | final submit |
 | POST | `/api/public/{slug}/upload` | file question |
 
@@ -130,7 +132,7 @@ Form mutations (create, save, rename, delete, duplicate, publish) require **owne
 
 ## 6. Question types
 
-`short_text`, `long_text`, `multiple_choice`, `dropdown`, `email`, `number`, `yes_no`, `rating`, `file_upload`, `payment`.
+`short_text`, `long_text`, `multiple_choice`, `dropdown`, `email`, `number`, `yes_no`, `rating`, `file_upload`, `payment` (records `"Paid …"` — no Stripe).
 
 Logic jumps apply to choice / yes-no / dropdown: a list of `{ option, target_id, end }`.
 
@@ -144,6 +146,8 @@ SQLite file created on boot.
 |---|---|---|
 | Local | `backend/typeform.db` | `DATABASE_URL=sqlite:///./typeform.db` |
 | Railway | `/data/typeform.db` | volume at `/data`; `DATABASE_URL=sqlite:////data/typeform.db` (four slashes); `UPLOAD_DIR=/data/uploads` |
+
+SQLite opens with WAL + `busy_timeout=5000` and a 30s connect timeout so concurrent builder saves and public partials do not lock each other out.
 
 The Docker image does not ship a `.db` file. JSON columns: `theme`, `options`, `logic`, partial `answers`. Cascades: deleting a form deletes questions, responses, answers, partials, presence, and activity. `password_resets` is a separate table (token, member_id, 1-hour expiry); it is not a form child.
 

@@ -132,7 +132,9 @@ classDiagram
   class ResponseService {
     +submit(db, slug, payload)
     +save_partial(db, slug, payload)
+    +load_partial(db, slug, visitor_id)
     +stats(db, form_id)
+    +results(db, form_id)
     +store_upload(db, slug, file)
   }
   class TeamService {

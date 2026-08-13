@@ -35,6 +35,7 @@ flowchart TB
 
   subgraph PublicFill
     UC10[Open published form]
+    UC25[Resume after refresh]
     UC11[Answer one question at a time]
     UC12[Validate client and server]
     UC13[Submit and see thank-you]
@@ -79,7 +80,10 @@ flowchart TB
   T --> UC15
   T --> UC16
   R --> UC10
+  R --> UC25
   R --> UC11
+  UC10 -.->|draft exists| UC25
+  UC25 --> UC11
   UC11 --> UC12
   UC12 --> UC13
   UC5 -.->|generates slug /f/slug| UC10
@@ -97,8 +101,9 @@ flowchart TB
 | Leave builder | Anyone in builder | Presence row exists | `DELETE /presence` on unmount — others stop seeing you |
 | Activity history | Any member | Form exists | Builder Settings shows saved / renamed / published log |
 | Publish | Owner / editor | Form has ≥1 question | `status=published`, public GET works |
-| Results | Owner / editor / viewer | Form exists | Insight cards (bar / yes-no segment / rating charts) + wrapping table with sticky Submitted column + detail modal; CSV download |
-| Fill | Respondent | Form published | Response + answers stored; partial cleared. No login. No powered-by footer. |
+| Results | Owner / editor / viewer | Form exists | Insight cards (donut + legend for choices, rating columns, open-text snippets) + wrapping table with sticky Submitted column + detail modal; CSV download |
+| Fill | Respondent | Form published | One-question Typeform UI; answers + position persist locally and as a partial. Submit stores response, clears partial. No login. |
+| Resume fill | Respondent | Draft in localStorage or GET /partial | Same visitor continues at last question with answers intact |
 | Invite | Owner only | Signed-in owner | Pending invite + email attempt; copy link always available; no member yet |
 | Accept invite | Invitee | Valid token | Account + member created as editor (can edit) or viewer (read-only) |
 | Change member role | Owner only | Member is editor or viewer | Role becomes the other; viewer cannot mutate forms until made editor |

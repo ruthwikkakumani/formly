@@ -121,7 +121,7 @@ erDiagram
 | `questions.options` JSON | MC / dropdown / payment amount+currency |
 | `questions.logic` JSON | `{ rules: [{ option, target_id, end }] }` |
 | `forms.theme` JSON | colors, font, thankYou, darkMode |
-| `partial_responses.visitor_id` unique | one in-progress blob per browser |
+| `partial_responses.visitor_id` unique | one in-progress blob per browser; `GET/POST /public/{slug}/partial` plus `localStorage` `formly.fill.{slug}` (answers + index) restore a refresh |
 | `workspace_members.role` | `owner` (full), `editor` (forms), or `viewer` (read-only). Owner invites/removes and can switch viewer ↔ editor |
 | Seeded reviewer | On boot, `reviewer@formly.dev` is inserted as `editor` if missing (`REVIEWER_EMAIL` / `REVIEWER_PASSWORD`). Not the owner |
 | `workspace_invites.status` | `pending`, `accepted`, `revoked`, `expired` |

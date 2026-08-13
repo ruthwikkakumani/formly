@@ -1,4 +1,3 @@
-import { QuestionNav } from "@/components/shared/QuestionNav";
 import { Question } from "@/lib/types";
 import { QuestionInput } from "./QuestionInput";
 
@@ -8,21 +7,21 @@ export function QuestionScreen({
   value,
   error,
   slug,
+  direction,
   onChange,
   onNext,
-  onBack,
 }: {
   question: Question;
   index: number;
   value: string;
   error: string;
   slug: string;
+  direction: "up" | "down";
   onChange: (value: string) => void;
   onNext: () => void;
-  onBack: () => void;
 }) {
   return (
-    <div className="ask">
+    <div className={`ask ${direction}`} key={question.id ?? index}>
       <h1>
         <em style={{ color: "var(--accent, #0445af)" }}>{index + 1} →</em>
         {question.title}
@@ -31,13 +30,10 @@ export function QuestionScreen({
       {question.description && <p>{question.description}</p>}
       <QuestionInput question={question} value={value} slug={slug} onChange={onChange} onCommit={onNext} />
       {error && <div className="validation">{error}</div>}
-      <div className="askactions">
-        <button className="ok" onClick={onNext}>
-          OK <kbd>↵</kbd>
-        </button>
-      </div>
+      <button type="button" className="ok" onClick={onNext}>
+        OK <kbd>↵</kbd>
+      </button>
       <small>press Enter ↵ or use arrow keys · letters select choices</small>
-      <QuestionNav onPrev={onBack} onNext={onNext} prevDisabled={index === 0} />
     </div>
   );
 }

@@ -21,16 +21,17 @@ Published is the only state where `GET /api/public/{slug}` succeeds.
 stateDiagram-v2
   [*] --> Loading: open /f/slug
   Loading --> Error: 404
-  Loading --> Welcome: published form
+  Loading --> Welcome: published, no draft
+  Loading --> Question: published, resume draft
   Welcome --> Question: Start or Enter
-  Question --> Question: next / back / jump
+  Question --> Question: next / back / jump / refresh restore
   Question --> Thanks: submit 200
   Question --> Question: 422 stay + message
   Error --> [*]
   Thanks --> [*]
 ```
 
-`useRespondent` step enum: `loading | error | welcome | question | thanks`.
+`useRespondent` step enum: `loading | error | welcome | question | thanks`. Draft lives in `localStorage` (`formly.fill.{slug}`) and `partial_responses`.
 
 ## Question row while editing
 

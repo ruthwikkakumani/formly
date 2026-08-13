@@ -37,7 +37,7 @@ Workspace / team: http://localhost:3000/team
 Settings (account + team): http://localhost:3000/settings  
 Templates: dashboard **Templates** tab (6 starter kits; creates a draft form)
 
-Later teammates cannot register themselves — the owner invites them from `/team` or `/settings` (email + copy link). Invited `editor` / `viewer` accounts can still save and publish forms. Only the owner can invite or remove teammates. The seeded reviewer is an `editor` and can save/publish.
+Later teammates cannot register themselves — the owner invites them from `/team` or `/settings` (email + copy link). Invited **editors** can save and publish forms. Invited **viewers** are read-only until the owner switches their role. Only the owner can invite, remove, or change roles. The seeded reviewer is an `editor` and can save/publish.
 
 Live collab demo: sign in as two different accounts (two browsers), open the same form. You will see the other editor. Save in one — the other reloads the saved form if their canvas is clean. This is not Google Docs live typing (no OT/CRDT). Closing or leaving the builder clears presence.
 
@@ -66,7 +66,7 @@ git push -u origin master
 
 ## 5. Docker images
 
-Multi-arch (`linux/amd64` + `linux/arm64`) via buildx builder `multi-builder`. Tag both `latest` and `1.0`. Frontend bakes `NEXT_PUBLIC_API_URL` at build time; the container entrypoint also writes `/runtime-config.js` from the same env var at start.
+Tag both `latest` and `1.0`. Railway pulls `linux/amd64` `latest`. The documented command also builds `linux/arm64`. Frontend bakes `NEXT_PUBLIC_API_URL` at build time; the container entrypoint also writes `/runtime-config.js` from the same env var at start. Public fill needs **both** images redeployed when partial-resume changes land.
 
 ```bash
 docker buildx inspect multi-builder >/dev/null 2>&1 || docker buildx create --name multi-builder --use --bootstrap

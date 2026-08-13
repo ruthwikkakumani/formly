@@ -70,18 +70,16 @@ const CHART_COLORS = ["#ff6d5a", "#191919", "#c4b49a", "#6f6f6c", "#e8b86d", "#5
 function ChoiceChart({ rows, total }: { rows: Array<{ label: string; count: number }>; total: number }) {
   if (!rows.length) return <p className="insightEmpty">No options yet</p>;
   const radius = 36;
-  const circ = 2 * Math.PI * radius;
-  let offset = 0;
+  let start = 0;
   const slices = rows.map((row, index) => {
-    const length = total ? (row.count / total) * circ : 0;
+    const pct = percent(row.count, total);
     const slice = {
       ...row,
       color: CHART_COLORS[index % CHART_COLORS.length],
-      dash: `${length} ${Math.max(0, circ - length)}`,
-      offset,
-      pct: percent(row.count, total),
+      pct,
+      start,
     };
-    offset -= length;
+    start += pct;
     return slice;
   });
 
@@ -89,23 +87,25 @@ function ChoiceChart({ rows, total }: { rows: Array<{ label: string; count: numb
     <div className="choiceChart">
       <div className="choiceDonutWrap" role="img" aria-label={slices.map((row) => `${row.label} ${row.pct}%`).join(", ")}>
         <svg viewBox="0 0 100 100" className="choiceDonut" aria-hidden="true">
-          <circle cx="50" cy="50" r={radius} fill="none" stroke="#f1efe8" strokeWidth="14" />
-          {slices.map((slice) =>
-            slice.count ? (
-              <circle
-                key={slice.label}
-                cx="50"
-                cy="50"
-                r={radius}
-                fill="none"
-                stroke={slice.color}
-                strokeWidth="14"
-                strokeDasharray={slice.dash}
-                strokeDashoffset={slice.offset}
-                transform="rotate(-90 50 50)"
-              />
-            ) : null,
-          )}
+          <g transform="rotate(-90 50 50)">
+            <circle cx="50" cy="50" r={radius} fill="none" stroke="#f1efe8" strokeWidth="14" />
+            {slices.map((slice) =>
+              slice.count ? (
+                <circle
+                  key={slice.label}
+                  cx="50"
+                  cy="50"
+                  r={radius}
+                  fill="none"
+                  stroke={slice.color}
+                  strokeWidth="14"
+                  pathLength={100}
+                  strokeDasharray={`${slice.pct} ${Math.max(0, 100 - slice.pct)}`}
+                  strokeDashoffset={-slice.start}
+                />
+              ) : null,
+            )}
+          </g>
         </svg>
         <div className="choiceDonutCenter">
           <strong>{total}</strong>

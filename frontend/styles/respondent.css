@@ -1,37 +1,17 @@
 .public {
   min-height: 100vh;
-  height: 100dvh;
-  overflow: hidden;
+  display: grid;
+  place-items: center;
   background: var(--bg);
   position: relative;
-  transition: background 0.7s var(--motion-ease), color 0.7s var(--motion-ease);
-}
-
-.public-stage {
-  position: relative;
-  height: 100%;
-  overflow: hidden;
-}
-
-.public-screen {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 72px 24px 88px;
-  will-change: transform;
-}
-
-.public.error,
-.public:has(> .loadingdot) {
-  display: grid;
-  place-items: center;
+  transition: background 0.5s, color 0.5s;
 }
 
 .welcome {
   text-align: center;
   max-width: 650px;
   padding: 30px;
+  animation: slideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .welcome h1,
@@ -39,6 +19,10 @@
   font: 500 44px/1.16 Fraunces, serif;
   letter-spacing: -1.3px;
   margin: 20px 0;
+}
+
+.welcome .brand {
+  margin: 0 0 8px;
 }
 
 .welcome p {
@@ -79,7 +63,7 @@
 .progress i {
   height: 100%;
   display: block;
-  transition: width 0.55s var(--motion-ease);
+  transition: width 0.35s;
 }
 
 .publictop {
@@ -97,15 +81,40 @@
   width: min(760px, 86vw);
 }
 
-.progress,
-.publictop {
-  z-index: 3;
+.ask.up {
+  animation: slideUp 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ask.down {
+  animation: slideDown 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .paybox .payamount {
   font-size: 28px;
   font-weight: 600;
   margin: 24px 0 8px;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(56px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .ask h1 em {
@@ -125,27 +134,48 @@
   color: #666;
 }
 
-.ask input,
-.ask textarea,
-.ask select {
+.public .ask input,
+.public .ask textarea,
+.public .ask select {
+  -webkit-appearance: none;
+  appearance: none;
   width: 100%;
-  border: 0;
-  border-bottom: 2px solid #c8c8c2;
+  border-width: 0;
+  border-style: solid;
+  border-color: transparent;
+  border-bottom-width: 2px;
+  border-bottom-color: #777;
   border-radius: 0;
   background: transparent;
   padding: 15px 0;
   font-size: 20px;
-  outline: 0;
+  outline: none;
+  outline-offset: 0;
   margin-top: 26px;
   box-shadow: none;
-  transition: border-color 120ms linear;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.ask input:focus,
-.ask textarea:focus,
-.ask select:focus {
-  border-color: var(--ink);
+.public .ask input:hover,
+.public .ask input:focus,
+.public .ask input:focus-visible,
+.public .ask input:active,
+.public .ask textarea:hover,
+.public .ask textarea:focus,
+.public .ask textarea:focus-visible,
+.public .ask textarea:active,
+.public .ask select:hover,
+.public .ask select:focus,
+.public .ask select:focus-visible,
+.public .ask select:active {
+  outline: none;
+  outline-offset: 0;
+  border-width: 0;
+  border-bottom-width: 2px;
+  border-color: transparent;
+  border-bottom-color: #777;
   box-shadow: none;
+  background: transparent;
 }
 
 .ask textarea {
@@ -169,62 +199,10 @@
   font-size: 16px;
 }
 
-.publicchoices button:hover:not(.chosen) {
-  background: #f4f4f1;
-}
-
 .publicchoices button.chosen,
 .rating .chosen {
-  background: var(--accent, #0445af);
+  background: #191919;
   color: #fff;
-}
-
-.askactions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-top: 23px;
-}
-
-.askactions .ok {
-  margin-top: 0;
-}
-
-.fillnav {
-  display: flex;
-  gap: 6px;
-}
-
-.public .fillnav {
-  position: fixed;
-  right: 24px;
-  bottom: 24px;
-  z-index: 2;
-}
-
-.fillnav button {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border-radius: 8px;
-  background: var(--ink);
-  color: #fff;
-}
-
-.fillnav button:hover:not(:disabled) {
-  background: var(--coral);
-}
-
-.fillnav button:focus-visible {
-  outline: 2px solid var(--coral);
-  outline-offset: 2px;
-}
-
-.fillnav button:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
 }
 
 .publicchoices b {
@@ -246,10 +224,6 @@
   color: #6558f5;
 }
 
-.rating button:hover:not(.chosen) {
-  opacity: 0.72;
-}
-
 .upload {
   margin-top: 28px;
 }
@@ -269,6 +243,22 @@
   color: #bd3232;
   font-size: 13px;
   margin-top: 15px;
+}
+
+.ask > .ok {
+  margin-top: 23px;
+  background: var(--ok);
+  color: #fff;
+  padding: 9px 13px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.public kbd {
+  padding: 2px 4px;
+  background: #ffffff30;
+  border-radius: 3px;
 }
 
 .ask > small {
@@ -299,5 +289,13 @@
   .ask h1,
   .welcome h1 {
     font-size: 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome,
+  .ask.up,
+  .ask.down {
+    animation: none;
   }
 }

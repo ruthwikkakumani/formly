@@ -98,9 +98,19 @@ sequenceDiagram
     Route-->>UI: 404
   else published
     Route-->>UI: form + questions + theme
-    UI->>Respondent: Welcome → Start
+    Hook->>Hook: read localStorage fillDraft
+    opt visitor id exists
+      Hook->>Pub: GET /partial?visitor_id
+      Pub-->>Hook: saved answers
+    end
+    alt in-progress draft
+      UI->>Respondent: Resume at last question
+    else
+      UI->>Respondent: Welcome → Start
+    end
     loop each question
       Respondent->>Hook: answer
+      Hook->>Hook: write localStorage immediately
       Hook->>Pub: POST /partial
       Pub->>DB: UPSERT partial_responses
       Respondent->>Hook: Enter / OK / choice
@@ -128,10 +138,9 @@ sequenceDiagram
   participant API as formsApi
 
   Creator->>Results: Open Results tab
-  Results->>API: GET /forms/{id}/responses
-  Results->>API: GET /forms/{id}/stats
+  Results->>API: GET /forms/{id}/results
   API-->>Results: rows + per-question counts + completion %
-  Results->>Insight: bar / segment / rating cards
+  Results->>Insight: donut / rating / snippet cards
   Results->>Table: wrapping headers + sticky Submitted
   Creator->>Table: Click a row
   Table->>Creator: Response detail modal

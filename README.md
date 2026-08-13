@@ -67,10 +67,10 @@ formly/
 │       ├── services/     rules, auth, invites, email, seed, webhooks, collaboration
 │       └── api/routes/   auth, forms, public, team, invites, health
 └── frontend/
-    ├── app/              /, /login, /register, /forgot-password, /reset/[token], /invite/[token], /builder/[id], /f/[slug], /team, /settings
+    ├── app/              (workspace)/{page,team,settings}, /login, /register, /forgot-password, /reset/[token], /invite/[token], /builder/[id], /f/[slug]
     ├── components/       dashboard (incl. templates), builder, results, settings, respondent, team
     ├── hooks/            useForms, useBuilder, useRespondent, useCurrentUser
-    ├── lib/              api, types, validation, templates, errors, access
+    ├── lib/              api, types, validation, templates, errors, access, fillDraft
     └── styles/           per-surface CSS
 ```
 
@@ -117,9 +117,9 @@ Saving a form updates questions by id so historical answers are kept. Full colum
 
 - `GET/POST /api/forms` · `GET/PUT/PATCH/DELETE /api/forms/{id}`
 - `POST /api/forms/{id}/duplicate` · `POST /api/forms/{id}/publish`
-- `GET /api/forms/{id}/responses` · `GET /api/forms/{id}/stats` · `GET /api/forms/{id}/responses.csv`
+- `GET /api/forms/{id}/responses` · `GET /api/forms/{id}/stats` · `GET /api/forms/{id}/results` · `GET /api/forms/{id}/responses.csv`
 - `POST/GET/DELETE /api/forms/{id}/presence` · `GET /api/forms/{id}/activity`
-- `GET /api/public/{slug}` · `POST /api/public/{slug}/responses|partial|upload`
+- `GET /api/public/{slug}` · `GET/POST /api/public/{slug}/partial` · `POST /api/public/{slug}/responses|upload`
 - `POST /api/auth/register` · `POST /api/auth/login` · `GET/PATCH /api/auth/me` · `POST /api/auth/password`
 - `POST /api/auth/forgot-password` · `GET/POST /api/auth/reset-password/{token}`
 - `GET /api/workspace/members` · `DELETE /api/workspace/members/{id}` (remove: owner only)
@@ -129,13 +129,13 @@ Saving a form updates questions by id so historical answers are kept. Full colum
 
 ## Features
 
-Builder, CRUD, publish/share, conversational fill (keyboard + progress + validation), results + CSV, themes (colors, fonts, background, dark mode), thank-you copy, logic jumps, file upload, payments, webhooks, workspace collaboration, who-is-editing + save history, starter **templates** (6), seeded published forms.
+Builder, CRUD, publish/share, conversational fill (keyboard + progress + validation + resume after refresh), results + CSV, themes (colors, fonts, background, fill dark mode), thank-you copy, logic jumps, file upload, payment stub, webhooks, workspace collaboration, who-is-editing + save history, starter **templates** (6), seeded published forms.
 
 **Auth.** First `/register` creates the owner (a seeded reviewer editor does not block that). After that, new people join only by accepting an invite. Public `/f/{slug}` stays open with no login. Forgot password is `/forgot-password`; the emailed link opens `/reset/{token}`.
 
 **Reviewer login.** Graders sign in at `/login` with `reviewer@formly.dev` / `FormlyReview1` (shown on the page, with a fill button). Role is `editor`: can save and publish forms; **cannot** invite or remove teammates. Not the owner’s Gmail. Override with `REVIEWER_EMAIL` / `REVIEWER_PASSWORD` (API seed) and `NEXT_PUBLIC_REVIEWER_EMAIL` / `NEXT_PUBLIC_REVIEWER_PASSWORD` (login page).
 
-**Roles.** Invite labels are `editor` or `viewer`, but both can **save and publish** forms. Only the **owner** can invite or remove teammates.
+**Roles.** `owner` — full access including invites and role changes. `editor` — create/edit/publish forms; no team admin. `viewer` — read-only on forms (list, builder, results). The owner can switch a teammate between viewer and editor.
 
 **Invites.** Owner sends an email from Workspace (`/team`) or Settings (`/settings`) and always gets a **copy link**. On Railway, Gmail SMTP (ports 587/465) is often blocked, so the email may not arrive — the invite is still created and the copy link works.
 
@@ -147,7 +147,9 @@ Builder, CRUD, publish/share, conversational fill (keyboard + progress + validat
 
 **Builder list.** Questions reorder with `@dnd-kit`. Dragging a row over another **slides neighbors to open a gap**; drop commits the new order; Escape cancels. Overlay follows the pointer; axis is vertical only.
 
-**Results.** Insights view: completion % with a track, then per-question cards (`QuestionInsight`) — horizontal **bar** charts for choices, **segment** bars for yes/no, **rating** columns (1–5) with average, and recent snippets for open text. Below that, a wrapping-header response table with a **sticky Submitted** column, row detail modal, and Export CSV.
+**Public fill.** One question at a time, centered Typeform layout (Fraunces titles, underline answers, no focus box). Answers and position save to `localStorage` immediately and to `POST /api/public/{slug}/partial` in the background. A refresh or new visit with the same browser resumes where the respondent stopped (`GET /partial` + `lib/fillDraft.ts`). After a successful submit, that tab shows thank-you; a later visit can start a new response.
+
+**Results.** Combined `GET /forms/{id}/results` (polls while the Results tab is open). Insight cards (`QuestionInsight`): **donut** + legend for multiple choice / dropdown / yes-no, **rating** columns (1–5) with average, snippets for open text. Completion % + in-progress count from partials. Wrapping-header response table with a **sticky Submitted** column, row detail modal, and Export CSV.
 
 **Errors.** API and UI messages are situation-specific (auth, invites, publish, network, SMTP blocked). Hung requests abort after 8 seconds instead of spinning forever.
 
@@ -163,8 +165,9 @@ Public fill has no “Powered by formly” footer.
 
 - Creators sign in with email/password. First register becomes owner; later people join only via invite accept. Public fill links stay open with no login.
 - Assignment reviewers use the seeded `reviewer@formly.dev` / `FormlyReview1` editor shown on `/login` — not a personal Gmail.
-- `editor` and `viewer` are labels only for the invite; both can edit and publish. Only the owner manages the team.
+- `editor` can create, edit, and publish forms. `viewer` is read-only until the owner promotes them. Only the owner invites, removes, or changes roles.
 - Payments record a successful pay action in the response (no live Stripe keys).
+- Public fill progress is stored per slug in `localStorage` (visitor id + answers + question index) and mirrored to `partial_responses`. A refresh restores the same session.
 - Webhooks POST JSON on submit; a down endpoint does not fail the response.
 - Team invites send a real email with an accept link when SMTP is reachable. The person is added only after they accept; ignore/revoke leaves them out. Copy link is the reliable fallback.
 - Presence uses heartbeats (not WebSockets, OT, or CRDT). Identity is the signed-in account. Other builders see who is there and pick up **saved** changes — not character-by-character typing.

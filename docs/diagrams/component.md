@@ -8,8 +8,10 @@ flowchart LR
     Pages[Next.js pages]
     Views[Feature views + Templates + Settings]
     Hooks[Hooks including useCurrentUser]
+    Draft["lib/fillDraft.ts localStorage"]
     Client["lib/api.ts 8s timeout"]
     Pages --> Views --> Hooks --> Client
+    Hooks --> Draft
   end
 
   subgraph FastAPI

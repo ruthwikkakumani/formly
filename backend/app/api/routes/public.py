@@ -18,6 +18,11 @@ def submit_response(slug: str, payload: SubmissionPayload, db: Session = Depends
     return {"id": response_service.submit(db, slug, payload)}
 
 
+@router.get("/{slug}/partial")
+def get_partial(slug: str, visitor_id: str, db: Session = Depends(get_db)):
+    return response_service.load_partial(db, slug, visitor_id)
+
+
 @router.post("/{slug}/partial")
 def save_partial(slug: str, payload: PartialPayload, db: Session = Depends(get_db)):
     response_service.save_partial(db, slug, payload)

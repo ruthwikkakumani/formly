@@ -85,9 +85,13 @@ export function useBuilder(id: string, initialTab: "Build" | "Results" | "Settin
   }, [id, current?.email, current?.name, current?.role, actor.actor_email, actor.actor_name, showToast]);
 
   const change = (patch: Partial<FormDefinition>) => {
-    if (!form || readOnly) return;
-    setDirty(true);
-    setForm({ ...form, ...patch });
+    if (readOnly) return;
+    setForm((current) => {
+      if (!current) return current;
+      dirtyRef.current = true;
+      setDirty(true);
+      return { ...current, ...patch };
+    });
   };
 
   const changeQuestion = (patch: Partial<Question>) => {

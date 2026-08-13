@@ -40,10 +40,12 @@ flowchart TD
 flowchart TD
   A[Open share link] --> B{Form published?}
   B -->|No| Z[Error screen]
-  B -->|Yes| C[Welcome]
-  C --> D[Show question N]
+  B -->|Yes| C{Local or server draft?}
+  C -->|Yes| D[Resume question N with answers]
+  C -->|No| W[Welcome]
+  W --> D
   D --> E[Type or choose answer]
-  E --> F[Save partial]
+  E --> F[Save localStorage + POST /partial]
   F --> G{Client valid?}
   G -->|No| H[Show validation]
   H --> E
@@ -93,7 +95,7 @@ flowchart TD
   F --> K[Invitee opens /invite/token]
   J --> K
   K --> L[Set password]
-  L --> M[Member created; can edit forms]
+  L --> M[Member created: editor can edit, viewer is read-only]
 ```
 
 ## Forgot password
