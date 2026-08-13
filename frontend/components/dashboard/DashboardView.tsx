@@ -48,7 +48,7 @@ export function DashboardView() {
         ) : (
           <EmptyState title="No forms yet" body="Create a form to start collecting responses." />
         )}
-        <Toast message={workspace.toast} />
+        <Toast {...workspace.toast} />
       </main>
     </WorkspaceShell>
   );

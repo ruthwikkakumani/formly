@@ -66,7 +66,7 @@ export function BuilderView({ id }: { id: string }) {
           <ActivityLog events={builder.activity} />
         </>
       )}
-      <Toast message={builder.toast} />
+      <Toast {...builder.toast} />
     </main>
   );
 }

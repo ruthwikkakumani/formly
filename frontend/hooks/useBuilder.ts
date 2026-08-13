@@ -100,7 +100,7 @@ export function useBuilder(id: string) {
       setActivity(await formsApi.activity(id));
       showToast(`Saved by ${current?.name || "you"}`);
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "We couldn't save just now. Please try again.");
+      showToast(err instanceof Error ? err.message : "We couldn't save just now. Please try again.", "error");
       throw err;
     }
   }
@@ -115,7 +115,7 @@ export function useBuilder(id: string) {
       setActivity(await formsApi.activity(id));
       showToast(form.status === "draft" ? "Your form is live" : "Form unpublished");
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "We couldn't update publish status. Please try again.");
+      showToast(err instanceof Error ? err.message : "We couldn't update publish status. Please try again.", "error");
     }
   }
 
@@ -125,7 +125,7 @@ export function useBuilder(id: string) {
       await navigator.clipboard.writeText(`${window.location.origin}/f/${form.slug}`);
       showToast("Share link copied");
     } catch {
-      showToast("Couldn't copy the link. Select it from the address bar instead.");
+      showToast("Couldn't copy the link. Select it from the address bar instead.", "error");
     }
   }
 

@@ -17,9 +17,13 @@ export function TeamView() {
   const { toast, showToast } = useToast();
 
   async function load() {
-    const [nextMembers, nextInvites] = await Promise.all([teamApi.list(), teamApi.invites()]);
-    setMembers(nextMembers);
-    setInvites(nextInvites);
+    try {
+      const [nextMembers, nextInvites] = await Promise.all([teamApi.list(), teamApi.invites()]);
+      setMembers(nextMembers);
+      setInvites(nextInvites);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Couldn't load the workspace team.", "error");
+    }
   }
 
   useEffect(() => {
@@ -36,7 +40,7 @@ export function TeamView() {
       showToast("Invite email sent. They join only after accepting the link.");
       await load();
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Invite failed");
+      showToast(error instanceof Error ? error.message : "Invite failed", "error");
     } finally {
       setSending(false);
     }
@@ -76,9 +80,13 @@ export function TeamView() {
               <button
                 className="danger"
                 onClick={async () => {
-                  await teamApi.revokeInvite(inviteRow.id);
-                  showToast("Invite revoked");
-                  await load();
+                  try {
+                    await teamApi.revokeInvite(inviteRow.id);
+                    showToast("Invite revoked");
+                    await load();
+                  } catch (error) {
+                    showToast(error instanceof Error ? error.message : "Couldn't revoke that invite.", "error");
+                  }
                 }}
               >
                 Revoke
@@ -100,9 +108,13 @@ export function TeamView() {
               <button
                 className="danger"
                 onClick={async () => {
-                  await teamApi.remove(member.id);
-                  showToast("Member removed");
-                  await load();
+                  try {
+                    await teamApi.remove(member.id);
+                    showToast("Member removed");
+                    await load();
+                  } catch (error) {
+                    showToast(error instanceof Error ? error.message : "Couldn't remove that member.", "error");
+                  }
                 }}
               >
                 Remove
@@ -111,7 +123,7 @@ export function TeamView() {
           </article>
         ))}
       </div>
-      <Toast message={toast} />
+      <Toast {...toast} />
     </section>
   );
 }

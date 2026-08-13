@@ -36,7 +36,7 @@ export function useForms() {
       showToast(ok);
       await load();
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      showToast(err instanceof Error ? err.message : "Something went wrong. Please try again.", "error");
     }
   }
 
@@ -50,7 +50,7 @@ export function useForms() {
       });
       window.location.href = `/builder/${form.id}`;
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "We couldn't create the form. Please try again.");
+      showToast(err instanceof Error ? err.message : "We couldn't create the form. Please try again.", "error");
     }
   }
 
@@ -78,7 +78,7 @@ export function useForms() {
       await navigator.clipboard.writeText(`${window.location.origin}/f/${slug}`);
       showToast("Share link copied");
     } catch {
-      showToast("Couldn't copy the link. Please copy it from the browser instead.");
+      showToast("Couldn't copy the link. Please copy it from the browser instead.", "error");
     }
   }
 

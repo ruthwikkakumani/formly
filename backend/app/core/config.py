@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _DEFAULT_ORIGINS = [
@@ -10,8 +10,15 @@ _DEFAULT_ORIGINS = [
 ]
 
 
-def parse_cors_origins(value: str) -> list[str]:
+def unquote(value: str) -> str:
     raw = (value or "").strip()
+    if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in {'"', "'"}:
+        return raw[1:-1].strip()
+    return raw
+
+
+def parse_cors_origins(value: str) -> list[str]:
+    raw = unquote(value or "")
     if not raw:
         return list(_DEFAULT_ORIGINS)
     if raw.startswith("["):
@@ -20,9 +27,9 @@ def parse_cors_origins(value: str) -> list[str]:
         except json.JSONDecodeError:
             return [raw]
         if isinstance(parsed, list) and parsed:
-            return [str(item).strip() for item in parsed if str(item).strip()]
+            return [unquote(str(item)) for item in parsed if str(item).strip()]
         return list(_DEFAULT_ORIGINS)
-    return [part.strip() for part in raw.split(",") if part.strip()] or list(_DEFAULT_ORIGINS)
+    return [unquote(part) for part in raw.split(",") if part.strip()] or list(_DEFAULT_ORIGINS)
 
 
 class Settings(BaseSettings):
@@ -41,6 +48,22 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_from: str = ""
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    @field_validator(
+        "frontend_url",
+        "cors_origins",
+        "smtp_host",
+        "smtp_user",
+        "smtp_password",
+        "smtp_from",
+        "auth_secret",
+        "resend_api_key",
+        "invite_from_email",
+        mode="before",
+    )
+    @classmethod
+    def strip_env_quotes(cls, value: object) -> object:
+        return unquote(value) if isinstance(value, str) else value
 
     @property
     def cors_origin_list(self) -> list[str]:

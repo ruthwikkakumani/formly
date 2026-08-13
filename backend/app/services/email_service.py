@@ -72,7 +72,7 @@ def _send_resend(to_email: str, subject: str, text: str, html: str) -> None:
 
 def _send_smtp(to_email: str, subject: str, text: str, html: str) -> None:
     message = EmailMessage()
-    sender = settings.smtp_from or settings.smtp_user
+    sender = (settings.smtp_from or settings.smtp_user).strip()
     message["From"] = sender
     message["To"] = to_email
     message["Subject"] = subject
@@ -80,9 +80,17 @@ def _send_smtp(to_email: str, subject: str, text: str, html: str) -> None:
     message.add_alternative(html, subtype="html")
     context = ssl.create_default_context()
     try:
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=20) as smtp:
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=12) as smtp:
             smtp.starttls(context=context)
             smtp.login(settings.smtp_user, settings.smtp_password)
             smtp.send_message(message)
-    except Exception as error:
-        raise HTTPException(status_code=502, detail="Invite email failed to send") from error
+    except smtplib.SMTPAuthenticationError as error:
+        raise HTTPException(
+            status_code=502,
+            detail="Gmail rejected the SMTP login. Use an app password, and set SMTP_FROM to the same address as SMTP_USER.",
+        ) from error
+    except (TimeoutError, smtplib.SMTPException, OSError) as error:
+        raise HTTPException(
+            status_code=502,
+            detail="Could not send the invite email. Check SMTP_HOST/SMTP_PORT and try again.",
+        ) from error

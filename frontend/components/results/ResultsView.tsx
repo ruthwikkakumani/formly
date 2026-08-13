@@ -26,7 +26,7 @@ export function ResultsView({ id, questions }: { id: string; questions: Question
         setStats(nextStats);
       })
       .catch((err: unknown) => {
-        showToast(err instanceof Error ? err.message : "We couldn't load responses.");
+        showToast(err instanceof Error ? err.message : "We couldn't load responses.", "error");
       })
       .finally(() => setLoading(false));
   }, [id, showToast]);
@@ -44,7 +44,7 @@ export function ResultsView({ id, questions }: { id: string; questions: Question
             void formsApi
               .exportCsv(id)
               .then(() => showToast("CSV downloaded"))
-              .catch((err: unknown) => showToast(err instanceof Error ? err.message : "Export failed"))
+              .catch((err: unknown) => showToast(err instanceof Error ? err.message : "Export failed", "error"))
           }
         >
           Export CSV
@@ -65,7 +65,7 @@ export function ResultsView({ id, questions }: { id: string; questions: Question
         <EmptyState title="No responses yet" body="Publish the form and share the link to start collecting answers." />
       )}
       {open && <ResponseModal response={open} questions={questions} onClose={() => setOpen(undefined)} />}
-      <Toast message={toast} />
+      <Toast {...toast} />
     </section>
   );
 }

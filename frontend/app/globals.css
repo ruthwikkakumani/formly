@@ -96,6 +96,10 @@ a {
   animation: up 0.25s ease;
 }
 
+.toast.danger-toast {
+  background: #7a1f1f;
+}
+
 .loader,
 .empty {
   padding: 100px 24px;

@@ -1,4 +1,7 @@
-export function Toast({ message }: { message: string }) {
+export type ToastTone = "ok" | "error";
+
+export function Toast({ message, tone = "ok" }: { message: string; tone?: ToastTone }) {
   if (!message) return null;
-  return <div className="toast">✓ {message}</div>;
+  const error = tone === "error";
+  return <div className={error ? "toast danger-toast" : "toast"}>{error ? message : `✓ ${message}`}</div>;
 }
