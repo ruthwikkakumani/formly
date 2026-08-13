@@ -139,7 +139,7 @@ export function messageFromNetworkError(error: unknown): string {
   return sanitizeUserText(rawText(error)) || MESSAGES.generic;
 }
 
-export function messageFromUnknown(error: unknown, fallback = MESSAGES.generic): string {
+export function messageFromUnknown(error: unknown, fallback: string = MESSAGES.generic): string {
   const raw = rawText(error);
   const lower = raw.toLowerCase();
   if (NETWORK_MARKERS.some((marker) => lower.includes(marker))) return MESSAGES.network;
