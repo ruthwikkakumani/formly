@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import uuid4
 
-from fastapi import BackgroundTasks, HTTPException
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -10,7 +10,7 @@ from app.models import Member
 from app.models.invite import WorkspaceInvite, _invite_expiry
 from app.schemas.member import EMAIL_PATTERN, MemberPayload
 from app.services.auth_service import AuthService
-from app.services.email_service import deliver_invite_email
+from app.services.email_service import schedule_invite_email
 
 
 class InviteService:
@@ -37,7 +37,7 @@ class InviteService:
         )
         return [self.serialize(invite) for invite in invites]
 
-    def create(self, db: Session, payload: MemberPayload, background_tasks: BackgroundTasks) -> dict:
+    def create(self, db: Session, payload: MemberPayload) -> dict:
         self._expire_stale(db)
         email = str(payload.email).strip().lower()
         if not payload.name.strip():
@@ -74,14 +74,7 @@ class InviteService:
                 detail="We couldn't create that invite. Please try again.",
             ) from error
 
-        background_tasks.add_task(
-            deliver_invite_email,
-            invite.id,
-            email,
-            invite.name,
-            invite.role,
-            accept_url,
-        )
+        schedule_invite_email(invite.id, email, invite.name, invite.role, accept_url)
         return {
             "invite": self.serialize(invite),
             "email_sent": False,

@@ -1,6 +1,8 @@
+import asyncio
 import json
 import smtplib
 import ssl
+import threading
 import traceback
 import urllib.error
 import urllib.request
@@ -17,10 +19,28 @@ UNREACHABLE = "We couldn't reach the email provider. Please try again in a momen
 NOT_CONFIGURED = (
     "Invite emails aren't set up yet. Ask the workspace owner to configure email, then try again."
 )
-SMTP_TIMEOUT = 20
-SMTP_PORTS_BLOCKED = (
-    "Railway cannot reach smtp.gmail.com (SMTP ports 587/465 blocked). Copy the invite link and share it."
-)
+SMTP_TIMEOUT = 3
+SMTP_PORTS_BLOCKED = "Email could not be sent from this host (SMTP port blocked). Use the copy link."
+_pending_mail_tasks: set[asyncio.Task] = set()
+
+
+def schedule_invite_email(invite_id: int, to_email: str, name: str, role: str, accept_url: str) -> None:
+    """Run SMTP off the API event loop so GET /forms stays responsive."""
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        threading.Thread(
+            target=deliver_invite_email,
+            args=(invite_id, to_email, name, role, accept_url),
+            daemon=True,
+            name=f"invite-smtp-{invite_id}",
+        ).start()
+        return
+    task = loop.create_task(
+        asyncio.to_thread(deliver_invite_email, invite_id, to_email, name, role, accept_url)
+    )
+    _pending_mail_tasks.add(task)
+    task.add_done_callback(_pending_mail_tasks.discard)
 
 
 def deliver_invite_email(invite_id: int, to_email: str, name: str, role: str, accept_url: str) -> None:
@@ -28,8 +48,12 @@ def deliver_invite_email(invite_id: int, to_email: str, name: str, role: str, ac
     try:
         ok, message = send_invite_email(to_email, name, role, accept_url)
     except Exception as error:
-        _log_exception("Invite email SMTP failed", error)
-        ok, message = False, (_smtp_blocked_message() if _is_network_unreachable(error) else SEND_FAILED)
+        blocked = _is_smtp_blocked(error)
+        if blocked:
+            print("Railway blocked SMTP; invite still created + copy link.", flush=True)
+        else:
+            _log_exception("Invite email SMTP failed", error)
+        ok, message = False, (SMTP_PORTS_BLOCKED if blocked else SEND_FAILED)
     _store_invite_email_result(invite_id, ok, message)
 
 
@@ -53,8 +77,6 @@ def send_invite_email(to_email: str, name: str, role: str, accept_url: str) -> t
     """
     if settings.smtp_host.strip() and settings.smtp_user.strip():
         return _send_smtp(to_email, subject, text, html)
-    if settings.resend_api_key.strip():
-        return _send_resend(to_email, subject, text, html)
     print(f"Invite email SMTP failed: {NOT_CONFIGURED}", flush=True)
     return False, NOT_CONFIGURED
 
@@ -155,6 +177,7 @@ def _send_smtp(to_email: str, subject: str, text: str, html: str) -> tuple[bool,
     message.add_alternative(html, subtype="html")
     context = ssl.create_default_context()
     last_error: BaseException | None = None
+    logged_blocked = False
     print(
         f"Invite email SMTP sending host={host!r} user={user!r} from={sender!r} "
         f"password_len={len(password)} to={to_email!r}",
@@ -163,7 +186,7 @@ def _send_smtp(to_email: str, subject: str, text: str, html: str) -> tuple[bool,
 
     for mode, attempt_host, port in _smtp_attempts(host):
         try:
-            print(f"Invite email SMTP trying {mode} {attempt_host}:{port}", flush=True)
+            print(f"Invite email SMTP trying {mode} {attempt_host}:{port} timeout={SMTP_TIMEOUT}s", flush=True)
             if mode == "ssl":
                 with smtplib.SMTP_SSL(attempt_host, port, timeout=SMTP_TIMEOUT, context=context) as smtp:
                     smtp.login(user, password)
@@ -179,52 +202,65 @@ def _send_smtp(to_email: str, subject: str, text: str, html: str) -> tuple[bool,
             return True, ""
         except Exception as error:
             last_error = error
-            _log_smtp_error(error, attempt_host, port, mode)
+            blocked = _is_smtp_blocked(error)
+            _log_smtp_error(error, attempt_host, port, mode, include_traceback=not blocked)
+            if blocked and not logged_blocked:
+                print("Railway blocked SMTP; invite still created + copy link.", flush=True)
+                logged_blocked = True
             if _is_network_unreachable(error):
-                print(
-                    f"Railway cannot reach {attempt_host} (SMTP ports blocked).",
-                    flush=True,
-                )
-                return False, _smtp_blocked_message(attempt_host)
+                return False, SMTP_PORTS_BLOCKED
 
     if isinstance(last_error, smtplib.SMTPAuthenticationError):
         return False, AUTH_FAILED
-    if isinstance(last_error, (TimeoutError, ConnectionRefusedError, smtplib.SMTPServerDisconnected)):
+    if _is_smtp_blocked(last_error):
+        return False, SMTP_PORTS_BLOCKED
+    if isinstance(last_error, smtplib.SMTPServerDisconnected):
         return False, UNREACHABLE
     if isinstance(last_error, OSError) and not isinstance(last_error, smtplib.SMTPException):
         return False, UNREACHABLE
     return False, SEND_FAILED
 
 
-def _smtp_blocked_message(host: str = "") -> str:
-    target = (host or settings.smtp_host or "smtp.gmail.com").strip() or "smtp.gmail.com"
-    if target.lower() == "smtp.gmail.com":
-        return SMTP_PORTS_BLOCKED
-    return (
-        f"Railway cannot reach {target} (SMTP ports 587/465 blocked). "
-        "Copy the invite link and share it."
-    )
+def _is_smtp_blocked(error: BaseException | None) -> bool:
+    return _is_network_unreachable(error) or _is_smtp_timeout(error)
 
 
-def _is_network_unreachable(error: BaseException | None) -> bool:
+def _walk_exceptions(error: BaseException | None):
     current: BaseException | None = error
     seen: set[int] = set()
     while current is not None and id(current) not in seen:
         seen.add(id(current))
-        if getattr(current, "errno", None) == 101:
-            return True
-        text = str(current).lower()
-        if "network is unreachable" in text or "[errno 101]" in text:
-            return True
+        yield current
         reason = getattr(current, "reason", None)
         if isinstance(reason, BaseException):
             current = reason
             continue
         current = current.__cause__ or current.__context__
+
+
+def _is_network_unreachable(error: BaseException | None) -> bool:
+    for current in _walk_exceptions(error):
+        if getattr(current, "errno", None) == 101:
+            return True
+        text = str(current).lower()
+        if "network is unreachable" in text or "[errno 101]" in text:
+            return True
     return False
 
 
-def _log_smtp_error(error: BaseException, host: str, port: int, mode: str) -> None:
+def _is_smtp_timeout(error: BaseException | None) -> bool:
+    for current in _walk_exceptions(error):
+        if isinstance(current, TimeoutError):
+            return True
+        text = str(current).lower()
+        if "timed out" in text or "timeout" in text:
+            return True
+    return False
+
+
+def _log_smtp_error(
+    error: BaseException, host: str, port: int, mode: str, *, include_traceback: bool = True
+) -> None:
     smtp_code = getattr(error, "smtp_code", None)
     smtp_error = getattr(error, "smtp_error", None)
     print(
@@ -232,7 +268,8 @@ def _log_smtp_error(error: BaseException, host: str, port: int, mode: str) -> No
         f"type={type(error).__name__} smtp_code={smtp_code} smtp_error={smtp_error!r} error={error!r}",
         flush=True,
     )
-    traceback.print_exc()
+    if include_traceback:
+        traceback.print_exc()
 
 
 def _log_exception(prefix: str, error: BaseException) -> None:
