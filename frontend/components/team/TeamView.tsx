@@ -55,18 +55,9 @@ export function TeamView() {
       const result = await teamApi.invite({ name: trimmedName, email: trimmedEmail, role });
       setName("");
       setEmail("");
-      if (result.email_sent) {
-        setShareLink("");
-        setCopied(false);
-        showToast(result.message || "Invite email sent. They join only after accepting the link.");
-      } else {
-        setShareLink(result.accept_url);
-        setCopied(false);
-        showToast(
-          result.message || "Invite created, but the email could not be sent. Copy the invite link and share it.",
-          "error",
-        );
-      }
+      setShareLink(result.accept_url);
+      setCopied(false);
+      showToast(result.message || "Invite created");
       await load();
     } catch (error) {
       showToast(messageFromUnknown(error, MESSAGES.inviteSendFailed), "error");
@@ -138,7 +129,7 @@ export function TeamView() {
       </form>
       {shareLink ? (
         <div className="invite-share" role="status">
-          <p>The invite was created, but the email could not be sent. Copy the link and share it directly.</p>
+          <p>Invite created. Copy the invite link to share it.</p>
           <div className="invite-share-row">
             <input readOnly value={shareLink} aria-label="Invite link" onFocus={(event) => event.target.select()} />
             <button type="button" className="primary" onClick={() => void copyInviteLink(shareLink)}>

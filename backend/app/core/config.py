@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _DEFAULT_ORIGINS = [
@@ -75,6 +75,17 @@ class Settings(BaseSettings):
                 return int(cleaned)
             return cleaned
         return value
+
+    @field_validator("smtp_password", mode="after")
+    @classmethod
+    def strip_smtp_password_spaces(cls, value: str) -> str:
+        return "".join((value or "").split())
+
+    @model_validator(mode="after")
+    def default_smtp_from(self):
+        if not self.smtp_from.strip():
+            self.smtp_from = self.smtp_user
+        return self
 
     @property
     def cors_origin_list(self) -> list[str]:

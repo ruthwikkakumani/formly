@@ -89,8 +89,10 @@ SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=you@gmail.com
 SMTP_PASSWORD=your-16-char-app-password
-SMTP_FROM=Formly <you@gmail.com>
+SMTP_FROM=you@gmail.com
 ```
+
+Do not wrap values in quotes. Gmail app password must have no spaces. `SMTP_FROM` can be omitted (defaults to `SMTP_USER`).
 
 Or Resend: `RESEND_API_KEY=re_...` and `INVITE_FROM_EMAIL=Formly <onboarding@resend.dev>`.
 

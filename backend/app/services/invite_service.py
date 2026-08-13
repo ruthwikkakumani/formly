@@ -10,7 +10,7 @@ from app.models import Member
 from app.models.invite import WorkspaceInvite, _invite_expiry
 from app.schemas.member import EMAIL_PATTERN, MemberPayload
 from app.services.auth_service import AuthService
-from app.services.email_service import send_invite_email
+from app.services.email_service import queue_invite_email
 
 
 class InviteService:
@@ -72,18 +72,12 @@ class InviteService:
                 detail="We couldn't create that invite. Please try again.",
             ) from error
 
-        sent, email_error = send_invite_email(email, invite.name, invite.role, accept_url)
-        if sent:
-            message = "Invite email sent. They join only after accepting the link."
-        elif email_error:
-            message = f"{email_error.rstrip('.')} Copy the invite link and share it."
-        else:
-            message = "Invite created, but the email could not be sent. Copy the invite link and share it."
+        queue_invite_email(email, invite.name, invite.role, accept_url)
         return {
             "invite": self.serialize(invite),
-            "email_sent": sent,
+            "email_sent": False,
             "accept_url": accept_url,
-            "message": message,
+            "message": "Invite created. Copy the invite link if they don't get the email.",
         }
 
     def preview(self, db: Session, token: str) -> dict:
