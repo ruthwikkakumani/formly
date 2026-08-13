@@ -38,6 +38,11 @@ async def lifespan(app):
         f.questions=[Question(position=0,type="short_text",title="What should we call you?",required=True),Question(position=1,type="multiple_choice",title="How would you rate your experience?",options=["Amazing","Good","Okay","Needs work"],required=True),Question(position=2,type="long_text",title="What could we improve?",description="Your honest feedback helps.")]
         db.add(f); db.commit()
         r=Response(form_id=f.id); db.add(r); db.flush(); db.add_all([Answer(response_id=r.id,question_id=f.questions[0].id,value="Maya"),Answer(response_id=r.id,question_id=f.questions[1].id,value="Amazing")]); db.commit()
+    if db.query(Form).count() < 2:
+        f=Form(title="Remote work pulse",description="A quick check-in for distributed teams.",status="published",slug="remote-work-pulse")
+        f.questions=[Question(position=0,type="email",title="What is your work email?",required=True),Question(position=1,type="dropdown",title="How often do you work remotely?",options=["Every day","A few days a week","Occasionally","Never"],required=True),Question(position=2,type="rating",title="How satisfied are you with your setup?",required=True),Question(position=3,type="yes_no",title="Would you recommend remote work here?")]
+        db.add(f); db.commit()
+        r=Response(form_id=f.id); db.add(r); db.flush(); db.add_all([Answer(response_id=r.id,question_id=f.questions[0].id,value="alex@example.com"),Answer(response_id=r.id,question_id=f.questions[1].id,value="Every day"),Answer(response_id=r.id,question_id=f.questions[2].id,value="5"),Answer(response_id=r.id,question_id=f.questions[3].id,value="Yes")]); db.commit()
     db.close(); yield
 
 app=FastAPI(title="Formly API", lifespan=lifespan)
