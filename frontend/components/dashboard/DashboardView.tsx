@@ -1,13 +1,17 @@
 "use client";
 
+import { useState } from "react";
+
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Toast } from "@/components/shared/Toast";
 import { useForms } from "@/hooks/useForms";
 import { FormCard } from "./FormCard";
+import { TemplatesGallery } from "./TemplatesGallery";
 
 export function DashboardView() {
   const workspace = useForms();
+  const [tab, setTab] = useState<"forms" | "templates">("forms");
 
   return (
     <WorkspaceShell>
@@ -21,13 +25,17 @@ export function DashboardView() {
             + Create form
           </button>
         </section>
-        <div className="tabs">
-          <b>All forms</b>
-          <span role="button" tabIndex={0} onClick={() => workspace.templatesSoon()} onKeyDown={(event) => event.key === "Enter" && workspace.templatesSoon()}>
+        <div className="tabs" role="tablist">
+          <button type="button" role="tab" className={tab === "forms" ? "tabon" : ""} aria-selected={tab === "forms"} onClick={() => setTab("forms")}>
+            All forms
+          </button>
+          <button type="button" role="tab" className={tab === "templates" ? "tabon" : ""} aria-selected={tab === "templates"} onClick={() => setTab("templates")}>
             Templates
-          </span>
+          </button>
         </div>
-        {workspace.loading ? (
+        {tab === "templates" ? (
+          <TemplatesGallery creatingId={workspace.creatingTemplateId} onUse={workspace.createFromTemplate} />
+        ) : workspace.loading ? (
           <div className="empty">Loading your workspace…</div>
         ) : workspace.error ? (
           <EmptyState title="We couldn't load your forms" body={workspace.error} />

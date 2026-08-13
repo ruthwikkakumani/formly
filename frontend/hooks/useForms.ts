@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { formsApi } from "@/lib/api";
 import { createQuestion } from "@/lib/constants";
 import { MESSAGES, messageFromUnknown } from "@/lib/errors";
+import { FormTemplate, templateCreatePayload } from "@/lib/templates";
 import { FormDefinition } from "@/lib/types";
 import { useCurrentUser } from "./useCurrentUser";
 import { useToast } from "./useToast";
@@ -13,7 +14,8 @@ export function useForms() {
   const [forms, setForms] = useState<FormDefinition[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { toast, showToast } = useToast();
+  const [creatingTemplateId, setCreatingTemplateId] = useState<string | null>(null);
+  const { toast, showToast, flashToast } = useToast();
   const { actor } = useCurrentUser();
 
   const load = useCallback(async () => {
@@ -83,8 +85,17 @@ export function useForms() {
     }
   }
 
-  function templatesSoon() {
-    showToast("Templates are coming soon");
+  async function createFromTemplate(template: FormTemplate) {
+    if (creatingTemplateId) return;
+    setCreatingTemplateId(template.id);
+    try {
+      const form = await formsApi.create(templateCreatePayload(template, actor));
+      flashToast("Created from template");
+      window.location.href = `/builder/${form.id}`;
+    } catch (err) {
+      setCreatingTemplateId(null);
+      showToast(messageFromUnknown(err, MESSAGES.formCreateFailed), "error");
+    }
   }
 
   return {
@@ -92,12 +103,13 @@ export function useForms() {
     loading,
     error,
     toast,
+    creatingTemplateId,
     createForm,
+    createFromTemplate,
     renameForm,
     duplicateForm,
     togglePublish,
     deleteForm,
     copyLink,
-    templatesSoon,
   };
 }

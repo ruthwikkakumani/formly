@@ -226,10 +226,19 @@
   color: var(--muted);
 }
 
-.tabs b {
+.tabs button {
+  background: transparent;
+  color: var(--muted);
+  padding: 0 0 15px;
+  margin-bottom: -15px;
+  border-bottom: 2px solid transparent;
+  font-weight: 500;
+}
+
+.tabs button.tabon {
   color: var(--ink);
-  border-bottom: 2px solid var(--ink);
-  padding-bottom: 15px;
+  border-bottom-color: var(--ink);
+  font-weight: 700;
 }
 
 .formgrid {
@@ -338,6 +347,53 @@
 
 .cardactions {
   margin-top: 12px;
+}
+
+.tmplcard {
+  padding: 0;
+}
+
+.tmplhit {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  padding: 18px 18px 0;
+}
+
+.tmplhit:disabled {
+  opacity: 0.7;
+}
+
+.tmplchips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 14px 0 4px;
+}
+
+.tmplchip {
+  font-size: 11px;
+  font-weight: 600;
+  color: #555;
+  background: #f4f2ec;
+  border-radius: 999px;
+  padding: 4px 8px;
+}
+
+.tmplcard footer {
+  padding: 0 18px 16px;
+}
+
+.tmplcard footer button {
+  background: transparent;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tmplcard footer button:disabled {
+  color: #888;
 }
 
 @media (max-width: 900px) {

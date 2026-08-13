@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { ToastTone } from "@/components/shared/Toast";
+
+const FLASH_KEY = "formly-flash";
 
 export function useToast(duration = 2400) {
   const [toast, setToast] = useState({ message: "", tone: "ok" as ToastTone });
@@ -15,5 +17,24 @@ export function useToast(duration = 2400) {
     [duration],
   );
 
-  return { toast, showToast };
+  const flashToast = useCallback((message: string) => {
+    try {
+      sessionStorage.setItem(FLASH_KEY, message);
+    } catch {
+      /* ignore quota / private mode */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const flash = sessionStorage.getItem(FLASH_KEY);
+      if (!flash) return;
+      sessionStorage.removeItem(FLASH_KEY);
+      showToast(flash);
+    } catch {
+      /* ignore */
+    }
+  }, [showToast]);
+
+  return { toast, showToast, flashToast };
 }
