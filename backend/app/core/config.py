@@ -73,8 +73,8 @@ class Settings(BaseSettings):
             cleaned = unquote(value)
             if cleaned.isdigit():
                 return int(cleaned)
-            return cleaned
-        return value
+            return 587
+        return value or 587
 
     @field_validator("smtp_password", mode="after")
     @classmethod

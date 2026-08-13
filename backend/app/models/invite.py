@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from uuid import uuid4
 
-from sqlalchemy import DateTime, String
+from sqlalchemy import DateTime, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -23,3 +23,4 @@ class WorkspaceInvite(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     expires_at: Mapped[datetime] = mapped_column(DateTime, default=_invite_expiry)
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    email_error: Mapped[str | None] = mapped_column(Text, nullable=True)

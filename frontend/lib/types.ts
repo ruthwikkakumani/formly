@@ -99,6 +99,7 @@ export interface WorkspaceInvite {
   created_at?: string;
   expires_at?: string;
   accept_url?: string;
+  email_error?: string | null;
 }
 
 export interface InviteCreateResult {

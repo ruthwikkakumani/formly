@@ -59,6 +59,19 @@ export function TeamView() {
       setCopied(false);
       showToast(result.message || "Invite created");
       await load();
+      const invitedEmail = trimmedEmail.toLowerCase();
+      let reportedMailError = false;
+      const refreshMailStatus = async () => {
+        if (reportedMailError) return;
+        const nextInvites = await load();
+        const match = nextInvites.find((row) => row.email === invitedEmail);
+        if (match?.email_error) {
+          reportedMailError = true;
+          showToast(`Email failed: ${match.email_error}`, "error");
+        }
+      };
+      window.setTimeout(() => void refreshMailStatus(), 8000);
+      window.setTimeout(() => void refreshMailStatus(), 22000);
     } catch (error) {
       showToast(messageFromUnknown(error, MESSAGES.inviteSendFailed), "error");
       const nextInvites = await load();
@@ -148,6 +161,11 @@ export function TeamView() {
                 <p>
                   {inviteRow.email} · waiting to accept
                 </p>
+                {inviteRow.email_error ? (
+                  <p className="invite-email-error" role="status">
+                    Email failed: {inviteRow.email_error}
+                  </p>
+                ) : null}
               </div>
               <span className="status">pending</span>
               {inviteRow.accept_url ? (

@@ -1,10 +1,11 @@
 import json
 import smtplib
 import ssl
-import threading
+import traceback
 import urllib.error
 import urllib.request
 from email.message import EmailMessage
+from email.utils import parseaddr
 
 from app.core.config import settings
 
@@ -19,14 +20,14 @@ NOT_CONFIGURED = (
 SMTP_TIMEOUT = 20
 
 
-def queue_invite_email(to_email: str, name: str, role: str, accept_url: str) -> None:
-    thread = threading.Thread(
-        target=_send_invite_email_safe,
-        args=(to_email, name, role, accept_url),
-        daemon=True,
-        name="formly-invite-email",
-    )
-    thread.start()
+def deliver_invite_email(invite_id: int, to_email: str, name: str, role: str, accept_url: str) -> None:
+    print(f"Invite email background send starting invite_id={invite_id} to={to_email}", flush=True)
+    try:
+        ok, message = send_invite_email(to_email, name, role, accept_url)
+    except Exception as error:
+        _log_exception("Invite email SMTP failed", error)
+        ok, message = False, SEND_FAILED
+    _store_invite_email_result(invite_id, ok, message)
 
 
 def send_invite_email(to_email: str, name: str, role: str, accept_url: str) -> tuple[bool, str]:
@@ -51,15 +52,28 @@ def send_invite_email(to_email: str, name: str, role: str, accept_url: str) -> t
         return _send_resend(to_email, subject, text, html)
     if settings.smtp_host.strip() and settings.smtp_user.strip():
         return _send_smtp(to_email, subject, text, html)
-    print(f"Invite email SMTP failed: {RuntimeError(NOT_CONFIGURED)!r}", flush=True)
+    print(f"Invite email SMTP failed: {NOT_CONFIGURED}", flush=True)
     return False, NOT_CONFIGURED
 
 
-def _send_invite_email_safe(to_email: str, name: str, role: str, accept_url: str) -> None:
+def _store_invite_email_result(invite_id: int, ok: bool, message: str) -> None:
+    from app.db.session import SessionLocal
+    from app.models.invite import WorkspaceInvite
+
+    db = SessionLocal()
     try:
-        send_invite_email(to_email, name, role, accept_url)
+        invite = db.query(WorkspaceInvite).filter(WorkspaceInvite.id == invite_id).first()
+        if not invite:
+            print(f"Invite email result skipped missing invite_id={invite_id}", flush=True)
+            return
+        invite.email_error = None if ok else (message or SEND_FAILED)
+        db.commit()
+        print(f"Invite email result stored invite_id={invite_id} ok={ok}", flush=True)
     except Exception as error:
-        print(f"Invite email SMTP failed: {error!r}", flush=True)
+        db.rollback()
+        _log_exception("Invite email result persist failed", error)
+    finally:
+        db.close()
 
 
 def _send_resend(to_email: str, subject: str, text: str, html: str) -> tuple[bool, str]:
@@ -82,15 +96,15 @@ def _send_resend(to_email: str, subject: str, text: str, html: str) -> tuple[boo
         },
     )
     try:
-        with urllib.request.urlopen(request, timeout=5) as response:
+        with urllib.request.urlopen(request, timeout=SMTP_TIMEOUT) as response:
             if response.status >= 300:
                 body = response.read()
-                print(f"Invite email SMTP failed: {RuntimeError(f'status={response.status} body={body!r}')!r}", flush=True)
+                print(f"Invite email Resend failed: status={response.status} body={body!r}", flush=True)
                 return False, SEND_FAILED
-            print("Invite email sent", flush=True)
+            print(f"Invite email sent via Resend to={to_email}", flush=True)
             return True, ""
     except Exception as error:
-        print(f"Invite email SMTP failed: {error!r}", flush=True)
+        _log_exception("Invite email Resend failed", error)
         if isinstance(error, (urllib.error.URLError, TimeoutError)):
             return False, UNREACHABLE
         return False, SEND_FAILED
@@ -100,8 +114,32 @@ def _smtp_credentials() -> tuple[str, str, str, str]:
     host = settings.smtp_host.strip()
     user = settings.smtp_user.strip()
     password = "".join((settings.smtp_password or "").split())
-    sender = (settings.smtp_from or settings.smtp_user).strip()
+    sender = _smtp_from_address(user, (settings.smtp_from or "").strip())
     return host, user, password, sender
+
+
+def _smtp_from_address(user: str, configured_from: str) -> str:
+    sender = configured_from or user
+    _, email = parseaddr(sender)
+    address = (email or sender).strip()
+    if "gmail.com" in settings.smtp_host.lower() and address.lower() != user.lower():
+        print(
+            f"Invite email SMTP From {address!r} does not match SMTP_USER; using {user}",
+            flush=True,
+        )
+        return user
+    return sender or user
+
+
+def _smtp_attempts(host: str) -> list[tuple[str, str, int]]:
+    port = settings.smtp_port or 587
+    if port == 465:
+        return [("ssl", host, 465), ("starttls", host, 587)]
+    starttls_port = port if port != 465 else 587
+    attempts = [("starttls", host, starttls_port)]
+    if starttls_port != 465:
+        attempts.append(("ssl", host, 465))
+    return attempts
 
 
 def _send_smtp(to_email: str, subject: str, text: str, html: str) -> tuple[bool, str]:
@@ -114,32 +152,52 @@ def _send_smtp(to_email: str, subject: str, text: str, html: str) -> tuple[bool,
     message.add_alternative(html, subtype="html")
     context = ssl.create_default_context()
     last_error: BaseException | None = None
+    print(
+        f"Invite email SMTP sending host={host!r} user={user!r} from={sender!r} "
+        f"password_len={len(password)} to={to_email!r}",
+        flush=True,
+    )
 
-    try:
-        with smtplib.SMTP(host, 587, timeout=SMTP_TIMEOUT) as smtp:
-            smtp.ehlo()
-            smtp.starttls(context=context)
-            smtp.ehlo()
-            smtp.login(user, password)
-            smtp.send_message(message)
-        print("Invite email sent", flush=True)
-        return True, ""
-    except Exception as error:
-        last_error = error
-        print(f"Invite email SMTP failed: {error!r}", flush=True)
-
-    try:
-        with smtplib.SMTP_SSL(host, 465, timeout=SMTP_TIMEOUT, context=context) as smtp:
-            smtp.login(user, password)
-            smtp.send_message(message)
-        print("Invite email sent", flush=True)
-        return True, ""
-    except Exception as error:
-        last_error = error
-        print(f"Invite email SMTP failed: {error!r}", flush=True)
+    for mode, attempt_host, port in _smtp_attempts(host):
+        try:
+            print(f"Invite email SMTP trying {mode} {attempt_host}:{port}", flush=True)
+            if mode == "ssl":
+                with smtplib.SMTP_SSL(attempt_host, port, timeout=SMTP_TIMEOUT, context=context) as smtp:
+                    smtp.login(user, password)
+                    smtp.send_message(message)
+            else:
+                with smtplib.SMTP(attempt_host, port, timeout=SMTP_TIMEOUT) as smtp:
+                    smtp.ehlo()
+                    smtp.starttls(context=context)
+                    smtp.ehlo()
+                    smtp.login(user, password)
+                    smtp.send_message(message)
+            print(f"Invite email sent via SMTP {mode} {attempt_host}:{port} to={to_email}", flush=True)
+            return True, ""
+        except Exception as error:
+            last_error = error
+            _log_smtp_error(error, attempt_host, port, mode)
 
     if isinstance(last_error, smtplib.SMTPAuthenticationError):
         return False, AUTH_FAILED
-    if isinstance(last_error, (TimeoutError, ConnectionRefusedError, OSError)):
+    if isinstance(last_error, (TimeoutError, ConnectionRefusedError, smtplib.SMTPServerDisconnected)):
+        return False, UNREACHABLE
+    if isinstance(last_error, OSError) and not isinstance(last_error, smtplib.SMTPException):
         return False, UNREACHABLE
     return False, SEND_FAILED
+
+
+def _log_smtp_error(error: BaseException, host: str, port: int, mode: str) -> None:
+    smtp_code = getattr(error, "smtp_code", None)
+    smtp_error = getattr(error, "smtp_error", None)
+    print(
+        f"Invite email SMTP failed mode={mode} host={host} port={port} "
+        f"type={type(error).__name__} smtp_code={smtp_code} smtp_error={smtp_error!r} error={error!r}",
+        flush=True,
+    )
+    traceback.print_exc()
+
+
+def _log_exception(prefix: str, error: BaseException) -> None:
+    print(f"{prefix}: {type(error).__name__}: {error!r}", flush=True)
+    traceback.print_exc()

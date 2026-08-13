@@ -39,6 +39,11 @@ def _ensure_sqlite_columns() -> None:
         if "password_hash" not in member_columns:
             with engine.begin() as connection:
                 connection.execute(text("ALTER TABLE workspace_members ADD COLUMN password_hash VARCHAR(200) DEFAULT ''"))
+    if "workspace_invites" in tables:
+        invite_columns = {column["name"] for column in inspector.get_columns("workspace_invites")}
+        if "email_error" not in invite_columns:
+            with engine.begin() as connection:
+                connection.execute(text("ALTER TABLE workspace_invites ADD COLUMN email_error TEXT"))
 
 
 @asynccontextmanager

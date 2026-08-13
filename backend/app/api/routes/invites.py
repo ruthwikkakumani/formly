@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -26,9 +26,14 @@ def list_invites(db: Session = Depends(get_db), user: Member = Depends(get_curre
 
 
 @router.post("/workspace/invites")
-def create_invite(payload: MemberPayload, db: Session = Depends(get_db), user: Member = Depends(get_current_user)):
+def create_invite(
+    payload: MemberPayload,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    user: Member = Depends(get_current_user),
+):
     _can_manage(user)
-    return service.create(db, payload)
+    return service.create(db, payload, background_tasks)
 
 
 @router.delete("/workspace/invites/{invite_id}")

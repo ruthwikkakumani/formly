@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import uuid4
 
-from fastapi import HTTPException
+from fastapi import BackgroundTasks, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -10,7 +10,7 @@ from app.models import Member
 from app.models.invite import WorkspaceInvite, _invite_expiry
 from app.schemas.member import EMAIL_PATTERN, MemberPayload
 from app.services.auth_service import AuthService
-from app.services.email_service import queue_invite_email
+from app.services.email_service import deliver_invite_email
 
 
 class InviteService:
@@ -24,6 +24,7 @@ class InviteService:
             "created_at": invite.created_at,
             "expires_at": invite.expires_at,
             "accept_url": f"{settings.frontend_url.rstrip('/')}/invite/{invite.token}",
+            "email_error": invite.email_error,
         }
 
     def list_pending(self, db: Session) -> list[dict]:
@@ -36,7 +37,7 @@ class InviteService:
         )
         return [self.serialize(invite) for invite in invites]
 
-    def create(self, db: Session, payload: MemberPayload) -> dict:
+    def create(self, db: Session, payload: MemberPayload, background_tasks: BackgroundTasks) -> dict:
         self._expire_stale(db)
         email = str(payload.email).strip().lower()
         if not payload.name.strip():
@@ -56,6 +57,7 @@ class InviteService:
             invite.role = role
             invite.token = uuid4().hex
             invite.expires_at = _invite_expiry()
+            invite.email_error = None
         else:
             invite = WorkspaceInvite(name=payload.name.strip(), email=email, role=role)
             db.add(invite)
@@ -72,7 +74,14 @@ class InviteService:
                 detail="We couldn't create that invite. Please try again.",
             ) from error
 
-        queue_invite_email(email, invite.name, invite.role, accept_url)
+        background_tasks.add_task(
+            deliver_invite_email,
+            invite.id,
+            email,
+            invite.name,
+            invite.role,
+            accept_url,
+        )
         return {
             "invite": self.serialize(invite),
             "email_sent": False,
