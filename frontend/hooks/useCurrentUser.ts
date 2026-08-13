@@ -9,12 +9,13 @@ import { WorkspaceMember } from "@/lib/types";
 
 export function useCurrentUser() {
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
-  const [current, setCurrent] = useState<WorkspaceMember>();
+  const [current, setCurrent] = useState<WorkspaceMember | null>(null);
   const [error, setError] = useState("");
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (!getToken()) {
+      setCurrent(null);
       setReady(true);
       return;
     }
@@ -25,6 +26,7 @@ export function useCurrentUser() {
         setError("");
       })
       .catch((err: unknown) => {
+        setCurrent(null);
         setError(messageFromUnknown(err, MESSAGES.unauthenticated));
         clearToken();
       })

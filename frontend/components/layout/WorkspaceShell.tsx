@@ -20,8 +20,16 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     if (ready && !current) router.replace("/login");
   }, [ready, current, router]);
 
-  if (!ready || !current) {
+  if (!ready) {
     return <div className="loader">Loading workspace…</div>;
+  }
+
+  if (!current) {
+    return (
+      <div className="loader" role={error ? "alert" : undefined}>
+        {error || "Loading workspace…"}
+      </div>
+    );
   }
 
   return (

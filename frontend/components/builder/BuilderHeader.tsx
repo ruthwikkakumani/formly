@@ -17,7 +17,7 @@ export function BuilderHeader({
   form: FormDefinition;
   tab: "Build" | "Results" | "Settings";
   editors: FormEditor[];
-  current?: WorkspaceMember;
+  current?: WorkspaceMember | null;
   dirty: boolean;
   onTab: (tab: "Build" | "Results" | "Settings") => void;
   onTitle: (title: string) => void;

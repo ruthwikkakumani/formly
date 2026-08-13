@@ -11,6 +11,30 @@ import {
   WorkspaceMember,
 } from "./types";
 
+const REQUEST_TIMEOUT_MS = 8_000;
+
+async function timedFetch(input: string, init?: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const external = init?.signal;
+  if (external) {
+    if (external.aborted) controller.abort();
+    else external.addEventListener("abort", () => controller.abort(), { once: true });
+  }
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (timedOut) throw new Error(MESSAGES.timeout);
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 declare global {
   interface Window {
     __FORMLY_API__?: string;
@@ -30,8 +54,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (token) headers.set("Authorization", `Bearer ${token}`);
   let response: Response;
   try {
-    response = await fetch(`${apiBase()}${path}`, { ...init, headers });
+    response = await timedFetch(`${apiBase()}${path}`, { ...init, headers });
   } catch (error) {
+    if (error instanceof Error && error.message === MESSAGES.timeout) throw error;
     throw new Error(messageFromNetworkError(error, contextFromPath(path)));
   }
   if (
@@ -79,8 +104,9 @@ export const formsApi = {
   exportCsv: async (id: string | number) => {
     let response: Response;
     try {
-      response = await fetch(`${apiBase()}/forms/${id}/responses.csv`, { headers: authHeaders() });
+      response = await timedFetch(`${apiBase()}/forms/${id}/responses.csv`, { headers: authHeaders() });
     } catch (error) {
+      if (error instanceof Error && error.message === MESSAGES.timeout) throw error;
       throw new Error(messageFromNetworkError(error));
     }
     if (!response.ok) {
