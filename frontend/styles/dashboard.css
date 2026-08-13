@@ -87,6 +87,52 @@
   padding: 12px;
 }
 
+.authsuccess {
+  color: #1f6b3a !important;
+  background: #eaf7ee;
+  border: 1px solid #c9e6d2;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 2px 0 4px !important;
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+.accountform {
+  display: grid;
+  gap: 10px;
+}
+
+.accountform label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.accountform input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--ink);
+}
+
+.accountform input[readonly] {
+  background: #f4f4f1;
+  color: #666;
+}
+
+.account-settings {
+  padding-bottom: 0;
+}
+
+.team h2 {
+  font: 500 28px Fraunces, serif;
+  margin: 6px 0 10px;
+}
+
 .autherr {
   color: #7a1f1f !important;
   background: #fdecec;

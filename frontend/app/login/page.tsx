@@ -61,6 +61,9 @@ export default function LoginPage() {
         </button>
       </form>
       <p>
+        <Link href="/forgot-password">Forgot password?</Link>
+      </p>
+      <p>
         First person here? <Link href="/register">Create the workspace</Link>
       </p>
     </main>
