@@ -1,0 +1,115 @@
+.results {
+  padding: 45px;
+  overflow: auto;
+  height: calc(100vh - 57px);
+}
+
+.results h2 {
+  font: 500 30px Fraunces, serif;
+}
+
+.results h2 span {
+  font: 14px "DM Sans";
+  background: #eee;
+  padding: 5px 10px;
+  border-radius: 12px;
+}
+
+.resultshead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.resultshead .save {
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.completion {
+  color: #666;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.stats {
+  display: flex;
+  gap: 14px;
+  overflow: auto;
+}
+
+.stats article {
+  min-width: 180px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 15px;
+}
+
+.stats p {
+  font-size: 13px;
+  margin: 0 0 12px;
+}
+
+.stats b,
+.stats small {
+  display: block;
+  font-size: 12px;
+  margin: 5px 0;
+}
+
+.responseTable {
+  margin-top: 28px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: auto;
+}
+
+.responseRow {
+  width: 100%;
+  border: 0;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.responseRow:hover {
+  background: #f7f4ff;
+}
+
+.answer {
+  border-top: 1px solid #e8e8e8;
+  padding: 14px 0;
+}
+
+.answer b {
+  font-size: 13px;
+}
+
+.answer p {
+  margin: 7px 0 0;
+  color: #555;
+  white-space: pre-wrap;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 160px repeat(var(--cols), 180px);
+  min-width: max-content;
+  border-bottom: 1px solid #eee;
+}
+
+.row span {
+  padding: 12px;
+  font-size: 12px;
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row.header {
+  font-weight: 700;
+  background: #f6f6f5;
+}

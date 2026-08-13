@@ -1,0 +1,110 @@
+.settings {
+  height: calc(100vh - 57px);
+  overflow: auto;
+  padding: 48px max(40px, 10vw);
+}
+
+.settings h2 {
+  font: 500 34px Fraunces, serif;
+  margin: 0;
+}
+
+.settings > p {
+  color: var(--muted);
+}
+
+.settingsgrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(260px, 1fr));
+  gap: 18px;
+  margin: 28px 0;
+}
+
+.settingsgrid article,
+.coming article {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.settingsgrid h3 {
+  margin-top: 0;
+}
+
+.settingsgrid label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 13px 0;
+  font-size: 14px;
+}
+
+.settingsgrid input[type="color"] {
+  width: 45px;
+  height: 30px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.settingsgrid select,
+.settingsgrid input[type="text"],
+.settingsgrid input:not([type="color"]):not([type="checkbox"]) {
+  width: 220px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.settingsgrid .hint {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: -4px;
+}
+
+.settingsgrid textarea {
+  width: 100%;
+  min-height: 82px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 9px;
+  resize: vertical;
+  margin-bottom: 12px;
+}
+
+.settingsgrid .primary {
+  font-size: 12px;
+  padding: 9px 13px;
+}
+
+.coming {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.coming article {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.coming p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.coming span {
+  color: #888;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+@media (max-width: 800px) {
+  .settingsgrid,
+  .coming {
+    grid-template-columns: 1fr;
+  }
+}

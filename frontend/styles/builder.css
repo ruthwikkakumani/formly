@@ -1,0 +1,448 @@
+.builder {
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.builderhead {
+  background: var(--surface);
+  padding: 0 24px;
+  border-bottom: 1px solid var(--line);
+  gap: 18px;
+}
+
+.titleinput {
+  border: 0;
+  max-width: 280px;
+  font-size: 15px;
+  font-weight: 600;
+  outline: 0;
+}
+
+.builderhead nav {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+
+.builderhead nav button {
+  background: none;
+  padding: 16px 12px;
+  color: var(--muted);
+}
+
+.builderhead nav .active {
+  color: var(--ink);
+  border-bottom: 2px solid var(--ink);
+}
+
+.buildbody {
+  display: grid;
+  grid-template-columns: 250px minmax(420px, 1fr) 280px;
+  height: calc(100vh - 57px);
+}
+
+.buildleft {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.buildleft .questionlist {
+  flex: 1;
+  border-right: 0;
+}
+
+.buildleft .typepicker {
+  max-height: 42%;
+  border-right: 0;
+  border-top: 1px solid var(--line);
+}
+
+.canvas {
+  padding: 72px max(48px, 8vw) 40px;
+  overflow: auto;
+}
+
+.canvasmeta {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.canvasanswer {
+  margin-top: 8px;
+}
+
+.canvas .ok {
+  margin-top: 28px;
+}
+
+.canvas > small {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.qsettings {
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  padding: 22px 16px;
+  overflow: auto;
+}
+
+.qsettings > p {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: var(--muted);
+}
+
+.qsettings > label,
+.paysettings label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin: 12px 0;
+}
+
+.qsettings select,
+.paysettings input {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.logicrule {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.paycard p {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.questionlist,
+.typepicker {
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  padding: 22px 12px;
+  overflow: auto;
+}
+
+.questionlist > p,
+.typepicker > p,
+.preview > p {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: var(--muted);
+}
+
+.questionlist button {
+  width: 100%;
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  text-align: left;
+  background: white;
+  padding: 10px;
+  border-radius: 8px;
+  color: #555;
+  font-size: 13px;
+}
+
+.questionlist .selected {
+  background: #f1f0ee;
+  color: #111;
+  font-weight: 600;
+}
+
+.questionlist small {
+  background: #eee;
+  border-radius: 4px;
+  padding: 3px 6px;
+  min-width: 24px;
+  text-align: center;
+}
+
+.questionlist span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.draghandle {
+  margin-left: auto;
+  color: #aaa;
+  font-style: normal;
+  letter-spacing: -2px;
+}
+
+.questionlist button[draggable="true"] {
+  cursor: grab;
+}
+
+.questionlist .addline {
+  color: #6558f5;
+  margin-top: 6px;
+}
+
+.editor {
+  padding: 62px max(40px, 8vw);
+  overflow: auto;
+}
+
+.qnumber {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+}
+
+.editor select {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 6px;
+  padding: 8px;
+  color: #555;
+}
+
+.questiontitle {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font: 500 31px/1.2 Fraunces, serif;
+  resize: none;
+  min-height: 94px;
+  outline: 0;
+  margin-top: 17px;
+}
+
+.description {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  padding: 8px 0;
+  outline: none;
+  resize: none;
+  color: var(--muted);
+}
+
+.options {
+  margin-top: 18px;
+}
+
+.optionrow {
+  display: flex;
+  gap: 8px;
+  margin: 7px 0;
+}
+
+.options input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.options button {
+  background: none;
+  color: #6558f5;
+  font-size: 13px;
+  padding: 8px 0;
+}
+
+.logic {
+  margin-top: 20px;
+  padding: 14px;
+  border: 1px dashed #cfc8df;
+  border-radius: 8px;
+  background: #fbfaff;
+}
+
+.logic b {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.logic p {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 0 0 8px;
+}
+
+.logic select {
+  display: block;
+  width: 100%;
+  margin: 7px 0;
+}
+
+.editbottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 45px;
+}
+
+.editbottom button {
+  padding: 7px 9px;
+  background: #eee;
+  margin-left: 4px;
+  border-radius: 6px;
+}
+
+.typepicker {
+  border-left: 1px solid var(--line);
+  border-right: 0;
+}
+
+.typepicker button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px;
+  background: none;
+  text-align: left;
+  font-size: 12px;
+  color: #555;
+}
+
+.typepicker b {
+  width: 21px;
+  height: 21px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  color: #6558f5;
+}
+
+.preview {
+  background: #ecece8;
+  padding: 22px;
+  overflow: auto;
+}
+
+.phone {
+  background: #fff;
+  min-height: 420px;
+  border-radius: 14px;
+  padding: 35px 24px;
+  box-shadow: var(--shadow);
+}
+
+.phone small {
+  color: #6558f5;
+}
+
+.phone h3 {
+  font: 500 21px/1.25 Fraunces, serif;
+}
+
+.phone p {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.fakeinput {
+  border-bottom: 2px solid #777;
+  height: 32px;
+  margin-top: 28px;
+}
+
+.multiline {
+  height: 70px;
+}
+
+.phone button,
+.ok {
+  margin-top: 23px;
+  background: var(--ok);
+  color: #fff;
+  padding: 9px 13px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.phone kbd,
+.public kbd {
+  padding: 2px 4px;
+  background: #ffffff30;
+  border-radius: 3px;
+}
+
+.choices span {
+  display: block;
+  margin: 10px 0;
+  font-size: 12px;
+}
+
+.choices b {
+  margin-right: 7px;
+  border: 1px solid #bbb;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+.stars {
+  font-size: 28px;
+  margin-top: 25px;
+  color: #6558f5;
+}
+
+@media (max-width: 1050px) {
+  .buildbody {
+    grid-template-columns: 200px 1fr;
+  }
+
+  .qsettings,
+  .typepicker {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .buildbody {
+    grid-template-columns: 1fr;
+  }
+
+  .questionlist,
+  .typepicker,
+  .preview {
+    display: none;
+  }
+
+  .editor {
+    padding: 35px 25px;
+  }
+
+  .builderhead {
+    gap: 8px;
+    padding: 0 12px;
+  }
+
+  .builderhead nav,
+  .save {
+    display: none;
+  }
+
+  .titleinput {
+    width: 120px;
+  }
+}

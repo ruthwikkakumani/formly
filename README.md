@@ -1,71 +1,74 @@
 # Formly — Typeform-inspired full-stack form builder
 
-Formly is a complete Typeform-style product: creators manage and build forms, publish a public share link, collect one-question-at-a-time responses, and inspect results. It includes usable seeded data on first launch.
+Formly clones Typeform’s workspace, builder, and conversational one-question-at-a-time fill flow. Creators build and publish forms; anyone with the link can respond without logging in. Results, themes, webhooks, team invites, and bonus question types are included.
 
-## Stack
+## Tech stack
 
-- **Frontend:** Next.js 15, TypeScript, responsive CSS (no UI-kit dependency)
-- **Backend:** FastAPI, SQLAlchemy 2
-- **Persistence:** SQLite (`backend/typeform.db`)
+- **Frontend:** Next.js 15, React 19, TypeScript
+- **Backend:** FastAPI, SQLAlchemy 2, Pydantic
+- **Database:** SQLite (`backend/typeform.db`)
 
 ## Run locally
 
-Open two terminals from the repository root.
+See **[COMMANDS.md](./COMMANDS.md)** for copy-paste commands (local, GitHub, deploy).
 
 ```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
+cd backend && python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt && uvicorn main:app --reload --port 8000
 ```
 
 ```bash
-cd frontend
-npm install
-npm run dev
+cd frontend && npm install && npm run dev
 ```
 
-Visit `http://localhost:3000`. The API docs are at `http://localhost:8000/docs`.
-
-For a hosted frontend, set `NEXT_PUBLIC_API_URL` to the deployed backend URL followed by `/api`, and add the frontend host to FastAPI CORS origins in `backend/main.py`.
-
-## Deployment
-
-The repository includes `backend/Dockerfile` for Render/Railway and `frontend/vercel.json` for Vercel. Deploy the API first, configure a persistent volume for `typeform.db` and `uploads/`, then deploy `frontend/` with `NEXT_PUBLIC_API_URL=https://your-api-host/api`. Publishing the repo and connecting deployment accounts are deliberately not performed by this local project.
-
-## Features
-
-- Form CRUD: create, rename (inline), duplicate, delete, publish/unpublish and a copyable public share link
-- Builder: ordered questions, native drag-and-drop reorder plus move controls, eight question types, required/help settings, live preview, save toast
-- Public full-screen conversational flow: transitions, progress, Enter/Arrow navigation, client and server validation, and a customizable thank-you state
-- Results: persisted submissions, clickable individual-response detail modal, submission table and choice-question counts
-- Settings: editable text/background theme colors and thank-you copy; clearly labelled Coming Soon placeholders for advanced features
-- Fresh database seeding creates two published mixed-question forms with sample responses
-- Bonus features: logic jumps, theme customization, dark mode, CSV response export, partial-response tracking/completion rate, and file-upload questions
+Open http://localhost:3000 — API docs at http://localhost:8000/docs.
 
 ## Architecture
 
-`frontend/app/page.tsx` is the creator dashboard. `frontend/app/builder/[id]/page.tsx` owns builder state and sends a complete form definition on Save. `frontend/app/f/[slug]/page.tsx` is deliberately public and has no creator authentication. `backend/main.py` provides REST endpoints, validation and lifecycle seeding; `models.py` keeps data relationships in one place.
+```
+Page → View → Hook → lib/api → FastAPI route → Service → Repository → SQLite
+```
+
+Public fill (`/f/{slug}` and `/api/public/...`) never requires auth. Draft forms return 404 on the public API.
+
+```
+backend/app/   core, db, models, schemas, repositories, services, api/routes
+frontend/        app (thin pages), components, hooks, lib, styles
+```
 
 ## Database schema
 
-| Table | Purpose |
-|---|---|
-| `forms` | Form metadata, publish status, public slug and theme |
-| `questions` | Ordered questions belonging to a form; stores type/options/settings |
-| `responses` | A submitted response for a form with timestamp |
-| `answers` | An individual answer joining a response and question |
+```
+forms                 id, title, description, status, slug, webhook_url, theme JSON, timestamps
+questions             id, form_id → forms, position, type, title, description, required, options JSON, logic JSON
+responses             id, form_id → forms, submitted_at
+answers               id, response_id → responses, question_id → questions, value
+partial_responses     id, form_id → forms, visitor_id UNIQUE, answers JSON, updated_at
+workspace_members     id, name, email UNIQUE, role (owner|editor|viewer), created_at
+```
 
-Deleting a form cascades to its questions, responses and answers. Answers remain queryable per question for summaries.
+Saving a form updates questions by id so historical answers are kept.
 
 ## API overview
 
-- `GET/POST /api/forms`, `GET/PUT/DELETE /api/forms/{id}`
-- `POST /api/forms/{id}/duplicate`, `POST /api/forms/{id}/publish`
-- `GET /api/public/{slug}`, `POST /api/public/{slug}/responses`
-- `GET /api/forms/{id}/responses`, `GET /api/forms/{id}/stats`
+- `GET/POST /api/forms` · `GET/PUT/PATCH/DELETE /api/forms/{id}`
+- `POST /api/forms/{id}/duplicate` · `POST /api/forms/{id}/publish`
+- `GET /api/forms/{id}/responses` · `GET /api/forms/{id}/stats` · `GET /api/forms/{id}/responses.csv`
+- `GET /api/public/{slug}` · `POST /api/public/{slug}/responses|partial|upload`
+- `GET/POST /api/workspace/members` · `DELETE /api/workspace/members/{id}`
+- `GET /api/health`
 
-## Assumptions and placeholders
+## Features
 
-The assignment permits simplified creator auth, so Formly uses a default workspace. Integrations, logic jumps, team collaboration, payments, and file uploads are intentionally labelled as Coming Soon. Hosting and publishing the local Git repository are submission steps; no remote push was made at the user's request.
+Builder, CRUD, publish/share, conversational fill (keyboard + progress + validation), results + CSV, themes (colors, fonts, background, dark mode), thank-you copy, logic jumps, file upload, payments, webhooks, workspace collaboration, seeded published forms.
+
+## Assumptions
+
+- Creator auth is a default logged-in workspace (assignment allows this).
+- Payments record a successful pay action in the response (no live Stripe keys).
+- Webhooks POST JSON on submit; a down endpoint does not fail the response.
+- Team invites are stored in the workspace (no outbound email provider).
+
+## Original work
+
+Original implementation of the assignment. Not copied from another Typeform clone.
