@@ -92,7 +92,7 @@ SMTP_PASSWORD=your-16-char-app-password
 SMTP_FROM=you@gmail.com
 ```
 
-Do not wrap values in quotes. Gmail app password must have no spaces. `SMTP_FROM` can be omitted (defaults to `SMTP_USER`).
+Do not wrap values in quotes. Gmail app password must have no spaces. `SMTP_FROM` can be omitted (defaults to `SMTP_USER`). Invite emails are a branded HTML table (Gmail-safe; no animation) plus a plaintext fallback.
 
 Or Resend: `RESEND_API_KEY=re_...` and `INVITE_FROM_EMAIL=Formly <onboarding@resend.dev>`.
 

@@ -8,6 +8,7 @@ import urllib.error
 import urllib.request
 from email.message import EmailMessage
 from email.utils import parseaddr
+from html import escape
 
 from app.core.config import settings
 
@@ -66,19 +67,88 @@ def send_invite_email(to_email: str, name: str, role: str, accept_url: str) -> t
         f"{accept_url}\n\n"
         "This link expires in 7 days. If you ignore it, nothing changes.\n"
     )
-    html = f"""
-    <div style="font-family:DM Sans,Arial,sans-serif;max-width:520px;line-height:1.5;color:#191919">
-      <p>Hi {name},</p>
-      <p>You were invited to join the <b>Formly</b> workspace as <b>{role}</b>.</p>
-      <p>You are not a member yet. Click accept to join, or ignore this email to decline.</p>
-      <p><a href="{accept_url}" style="display:inline-block;background:#191919;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600">Accept invite</a></p>
-      <p style="color:#6f6f6c;font-size:13px">Or paste: {accept_url}</p>
-    </div>
-    """
+    html = _invite_email_html(name, role, accept_url)
     if settings.smtp_host.strip() and settings.smtp_user.strip():
         return _send_smtp(to_email, subject, text, html)
     print(f"Invite email SMTP failed: {NOT_CONFIGURED}", flush=True)
     return False, NOT_CONFIGURED
+
+
+def _invite_email_html(name: str, role: str, accept_url: str) -> str:
+    """Gmail-safe table layout. Animation is omitted because Gmail strips it."""
+    safe_name = escape(name)
+    safe_role = escape(role)
+    safe_url = escape(accept_url, quote=True)
+    return f"""<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>You're invited to Formly</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#f7f6f3;">
+    <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+      Hi {safe_name} — you were invited to Formly as {safe_role}. You are not a member until you accept.
+    </div>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#f7f6f3;">
+      <tr>
+        <td align="center" style="padding:40px 16px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="520" style="width:100%;max-width:520px;background-color:#ffffff;border:1px solid #e6e6e2;border-radius:16px;">
+            <tr>
+              <td height="6" style="height:6px;line-height:6px;font-size:0;background-color:#ff6d5a;border-radius:16px 16px 0 0;">&nbsp;</td>
+            </tr>
+            <tr>
+              <td style="padding:36px 40px 12px 40px;">
+                <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:700;letter-spacing:-1.4px;line-height:1;color:#191919;">
+                  formly<span style="color:#ff6d5a;">•</span>
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 40px 0 40px;">
+                <p style="margin:0 0 10px 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;letter-spacing:1.4px;color:#6f6f6c;">
+                  WORKSPACE INVITE
+                </p>
+                <p style="margin:0 0 16px 0;font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:700;letter-spacing:-0.6px;line-height:1.25;color:#191919;">
+                  Hi {safe_name},
+                </p>
+                <p style="margin:0 0 12px 0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.55;color:#191919;">
+                  You were invited to join the Formly workspace as <strong>{safe_role}</strong>.
+                </p>
+                <p style="margin:0 0 28px 0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.55;color:#6f6f6c;">
+                  You are not a member yet. Accept the invite to join, or ignore this email and nothing changes.
+                </p>
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td align="center" bgcolor="#191919" style="border-radius:8px;">
+                      <a href="{safe_url}" target="_blank" style="display:inline-block;padding:14px 24px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px;">
+                        Accept invite
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:28px 40px 36px 40px;">
+                <p style="margin:0 0 8px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;color:#6f6f6c;">
+                  Or paste this link into your browser:
+                </p>
+                <p style="margin:0 0 16px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;color:#191919;word-break:break-all;">
+                  {safe_url}
+                </p>
+                <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;color:#9a9a97;">
+                  This link expires in 7 days.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
 
 
 def _store_invite_email_result(invite_id: int, ok: bool, message: str) -> None:
