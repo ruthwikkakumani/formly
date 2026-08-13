@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.constants import CHOICE_TYPES, MAX_UPLOAD_BYTES
-from app.models import Answer, PartialResponse, Response
+from app.models import PartialResponse, Response
 from app.repositories.form_repository import FormRepository
 from app.repositories.response_repository import ResponseRepository
 from app.schemas.submission import PartialPayload, SubmissionPayload
@@ -29,8 +29,14 @@ class ResponseService:
             "answers": {answer.question_id: answer.value for answer in response.answers},
         }
 
+    def require_form(self, db: Session, form_id: int):
+        form = self.form_repo.get_core(db, form_id)
+        if not form:
+            raise HTTPException(status_code=404, detail="We couldn't find that form. It may have been removed.")
+        return form
+
     def list_responses(self, db: Session, form_id: int) -> list[dict]:
-        self.forms.require(db, form_id)
+        self.require_form(db, form_id)
         return [self.serialize_response(item) for item in self.repo.list_for_form(db, form_id)]
 
     def submit(self, db: Session, slug: str, payload: SubmissionPayload) -> int:
@@ -76,14 +82,14 @@ class ResponseService:
             )
         db.commit()
 
-    def stats(self, db: Session, form_id: int) -> dict:
-        form = self.forms.require(db, form_id)
+    def _stats_from(self, form, responses: list[Response], in_progress: int) -> dict:
+        values_by_question: dict[int, list[str]] = {}
+        for response in responses:
+            for answer in response.answers:
+                values_by_question.setdefault(answer.question_id, []).append(answer.value)
         summaries = []
         for question in form.questions:
-            values = [
-                answer.value
-                for answer in db.query(Answer).filter(Answer.question_id == question.id).all()
-            ]
+            values = values_by_question.get(question.id, [])
             summaries.append(
                 {
                     "question_id": question.id,
@@ -93,8 +99,7 @@ class ResponseService:
                     "counts": dict(Counter(values)) if question.type in CHOICE_TYPES else {},
                 }
             )
-        completed = len(form.responses)
-        in_progress = self.repo.count_partials(db, form_id)
+        completed = len(responses)
         total = completed + in_progress
         return {
             "questions": summaries,
@@ -103,6 +108,19 @@ class ResponseService:
                 "in_progress": in_progress,
                 "rate": round(completed / total * 100) if total else 0,
             },
+        }
+
+    def stats(self, db: Session, form_id: int) -> dict:
+        form = self.require_form(db, form_id)
+        responses = self.repo.list_for_form(db, form_id)
+        return self._stats_from(form, responses, self.repo.count_partials(db, form_id))
+
+    def results(self, db: Session, form_id: int) -> dict:
+        form = self.require_form(db, form_id)
+        responses = self.repo.list_for_form(db, form_id)
+        return {
+            "responses": [self.serialize_response(item) for item in responses],
+            "stats": self._stats_from(form, responses, self.repo.count_partials(db, form_id)),
         }
 
     async def store_upload(self, db: Session, slug: str, file: UploadFile) -> dict:

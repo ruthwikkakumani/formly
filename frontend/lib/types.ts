@@ -82,6 +82,11 @@ export interface FormStats {
   };
 }
 
+export interface FormResults {
+  responses: FormResponse[];
+  stats: FormStats;
+}
+
 export interface WorkspaceMember {
   id: number;
   name: string;

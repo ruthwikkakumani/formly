@@ -59,19 +59,6 @@ export function BuilderHeader({
           readOnly={readOnly}
         />
       </div>
-      <div className="presence">
-        {others.length ? (
-          <span className="livepill">{others.map((editor) => editor.name).join(", ")} editing</span>
-        ) : (
-          <span className="livepill quiet">Only you</span>
-        )}
-        <span
-          className="savedby"
-          title={dirty ? "Unsaved changes" : `Last saved by ${form.updated_by || "—"}`}
-        >
-          {dirty ? "Unsaved changes" : `Last saved by ${form.updated_by || "—"}`}
-        </span>
-      </div>
       <nav className="buildertabs has-thumb" aria-label="Builder sections">
         <LayoutGroup id="builder-tabs">
           {TABS.map((item) => (
@@ -95,41 +82,56 @@ export function BuilderHeader({
           ))}
         </LayoutGroup>
       </nav>
-      <div className="builderactions">
-        {readOnly ? (
-          <span className="livepill viewonly">View only</span>
-        ) : (
-          <button
-            type="button"
-            className={`btnsave${dirty ? " is-dirty" : ""}${saving ? " is-busy" : ""}`}
-            onClick={onSave}
-            disabled={!dirty || saving}
+      <div className="builder-end">
+        <div className="presence">
+          {others.length ? (
+            <span className="livepill">{others.map((editor) => editor.name).join(", ")} editing</span>
+          ) : (
+            <span className="livepill quiet">Only you</span>
+          )}
+          <span
+            className="savedby"
+            title={dirty ? "Unsaved changes" : `Last saved by ${form.updated_by || "—"}`}
           >
-            <BusyLabel busy={saving} idle="Save" pending="Saving" />
-          </button>
-        )}
-        {form.status === "published" && (
-          <button type="button" className="btncopy" onClick={onCopyLink}>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path
-                d="M6.7 9.3 9.3 6.7M7.2 11.4l-.9.9a2.6 2.6 0 1 1-3.6-3.6l.9-.9M8.8 4.6l.9-.9a2.6 2.6 0 1 1 3.6 3.6l-.9.9"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
+            {dirty ? "Unsaved changes" : `Last saved by ${form.updated_by || "—"}`}
+          </span>
+        </div>
+        <div className="builderactions">
+          {readOnly ? (
+            <span className="livepill viewonly">View only</span>
+          ) : (
+            <button
+              type="button"
+              className={`btnsave${dirty ? " is-dirty" : ""}${saving ? " is-busy" : ""}`}
+              onClick={onSave}
+              disabled={!dirty || saving}
+            >
+              <BusyLabel busy={saving} idle="Save" pending="Saving" />
+            </button>
+          )}
+          {form.status === "published" && (
+            <button type="button" className="btncopy" onClick={onCopyLink}>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path
+                  d="M6.7 9.3 9.3 6.7M7.2 11.4l-.9.9a2.6 2.6 0 1 1-3.6-3.6l.9-.9M8.8 4.6l.9-.9a2.6 2.6 0 1 1 3.6 3.6l-.9.9"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+              Copy link
+            </button>
+          )}
+          {readOnly ? null : (
+            <button type="button" className={`primary${publishing ? " is-busy" : ""}`} onClick={onPublish} disabled={publishing}>
+              <BusyLabel
+                busy={publishing}
+                idle={form.status === "draft" ? "Publish" : "Unpublish"}
+                pending={form.status === "draft" ? "Publishing" : "Unpublishing"}
               />
-            </svg>
-            Copy link
-          </button>
-        )}
-        {readOnly ? null : (
-          <button type="button" className={`primary${publishing ? " is-busy" : ""}`} onClick={onPublish} disabled={publishing}>
-            <BusyLabel
-              busy={publishing}
-              idle={form.status === "draft" ? "Publish" : "Unpublish"}
-              pending={form.status === "draft" ? "Publishing" : "Unpublishing"}
-            />
-          </button>
-        )}
+            </button>
+          )}
+        </div>
       </div>
     </header>
   );

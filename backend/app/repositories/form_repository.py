@@ -12,6 +12,9 @@ class FormRepository:
             .first()
         )
 
+    def get_core(self, db: Session, form_id: int) -> Form | None:
+        return db.query(Form).options(joinedload(Form.questions)).filter(Form.id == form_id).first()
+
     def get_by_slug(self, db: Session, slug: str) -> Form | None:
         return (
             db.query(Form)

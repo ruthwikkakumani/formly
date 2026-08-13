@@ -101,6 +101,11 @@ def form_stats(form_id: int, db: Session = Depends(get_db)):
     return response_service.stats(db, form_id)
 
 
+@router.get("/{form_id}/results")
+def form_results(form_id: int, db: Session = Depends(get_db)):
+    return response_service.results(db, form_id)
+
+
 @router.get("/{form_id}/responses.csv")
 def export_csv(form_id: int, db: Session = Depends(get_db)):
     form = form_service.require(db, form_id)

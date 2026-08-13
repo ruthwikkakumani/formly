@@ -12,6 +12,7 @@ import {
   FormDefinition,
   FormEditor,
   FormResponse,
+  FormResults,
   FormStats,
   InviteCreateResult,
   WorkspaceInvite,
@@ -105,6 +106,7 @@ export const formsApi = {
     request<FormDefinition>(`/forms/${id}/publish`, json("POST", actor || {})),
   responses: (id: string | number) => request<FormResponse[]>(`/forms/${id}/responses`),
   stats: (id: string | number) => request<FormStats>(`/forms/${id}/stats`),
+  results: (id: string | number) => request<FormResults>(`/forms/${id}/results`),
   exportCsv: async (id: string | number) => {
     let response: Response;
     try {

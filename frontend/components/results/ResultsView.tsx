@@ -1,59 +1,102 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { BusyLabel } from "@/components/shared/BusyLabel";
 import { Toast } from "@/components/shared/Toast";
 import { formsApi } from "@/lib/api";
 import { MESSAGES, messageFromUnknown } from "@/lib/errors";
-import { FormResponse, FormStats, Question, QuestionStat } from "@/lib/types";
+import { FormResponse, FormResults, FormStats, Question, QuestionStat } from "@/lib/types";
 import { useToast } from "@/hooks/useToast";
 import { ResponseModal } from "./ResponseModal";
 import { ResponseTable } from "./ResponseTable";
 import { StatsStrip } from "./StatsStrip";
 
-function fallbackStats(questions: Question[]): QuestionStat[] {
-  return questions.map((question) => ({
-    question_id: question.id || 0,
-    title: question.title,
-    type: question.type,
-    responses: 0,
-    counts: {},
-  }));
+function sameResults(current: FormResults | null, next: FormResults) {
+  if (!current) return false;
+  if (current.responses.length !== next.responses.length) return false;
+  if (current.stats.completion.in_progress !== next.stats.completion.in_progress) return false;
+  if (current.stats.completion.completed !== next.stats.completion.completed) return false;
+  return current.responses.every(
+    (row, index) =>
+      row.id === next.responses[index]?.id && row.submitted_at === next.responses[index]?.submitted_at,
+  );
 }
 
-export function ResultsView({ id, questions }: { id: string; questions: Question[] }) {
-  const [responses, setResponses] = useState<FormResponse[]>([]);
-  const [stats, setStats] = useState<FormStats>();
+export function ResultsView({
+  id,
+  questions,
+  seed,
+  live = false,
+}: {
+  id: string;
+  questions: Question[];
+  seed?: FormResults;
+  live?: boolean;
+}) {
+  const [responses, setResponses] = useState<FormResponse[]>(seed?.responses || []);
+  const [stats, setStats] = useState<FormStats | undefined>(seed?.stats);
   const [open, setOpen] = useState<FormResponse>();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!seed);
   const [exporting, setExporting] = useState(false);
   const { toast, showToast } = useToast();
+  const snapshot = useRef<FormResults | null>(seed || null);
 
   useEffect(() => {
-    setLoading(true);
-    Promise.all([formsApi.responses(id), formsApi.stats(id)])
-      .then(([nextResponses, nextStats]) => {
-        setResponses(nextResponses);
-        setStats(nextStats);
-      })
-      .catch((err: unknown) => {
-        showToast(messageFromUnknown(err, MESSAGES.responsesLoadFailed), "error");
-      })
-      .finally(() => setLoading(false));
-  }, [id, showToast]);
+    if (!seed) return;
+    if (sameResults(snapshot.current, seed)) return;
+    snapshot.current = seed;
+    setResponses(seed.responses);
+    setStats(seed.stats);
+    setLoading(false);
+  }, [seed]);
 
-  const insights = stats?.questions?.length ? stats.questions : fallbackStats(questions);
+  useEffect(() => {
+    let cancelled = false;
+    const apply = (payload: FormResults) => {
+      if (sameResults(snapshot.current, payload)) return;
+      snapshot.current = payload;
+      setResponses(payload.responses);
+      setStats(payload.stats);
+    };
+    const load = async (quiet: boolean) => {
+      try {
+        const payload = await formsApi.results(id);
+        if (cancelled) return;
+        apply(payload);
+      } catch (err: unknown) {
+        if (cancelled || quiet) return;
+        showToast(messageFromUnknown(err, MESSAGES.responsesLoadFailed), "error");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    if (!snapshot.current) void load(false);
+    if (!live) {
+      return () => {
+        cancelled = true;
+      };
+    }
+    if (snapshot.current) void load(true);
+    const timer = window.setInterval(() => void load(true), 2500);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [id, live, showToast]);
+
+  const insights: QuestionStat[] = stats?.questions?.length ? stats.questions : [];
   const rate = stats?.completion.rate || 0;
   const completed = stats?.completion.completed || 0;
   const inProgress = stats?.completion.in_progress || 0;
+  const count = stats?.completion.completed ?? responses.length;
 
   return (
     <section className="results">
       <div className="resultshead">
         <div>
           <h2>
-            Responses <span>{responses.length}</span>
+            Responses <span>{count}</span>
           </h2>
           <div className="resultsMeta">
             <p className="completion">
@@ -84,7 +127,7 @@ export function ResultsView({ id, questions }: { id: string; questions: Question
           <BusyLabel busy={exporting} idle="Export CSV" pending="Exporting" />
         </button>
       </div>
-      {loading ? (
+      {loading && !stats ? (
         <div className="results-skel" aria-busy="true" aria-label="Loading responses">
           <div className="stats">
             {Array.from({ length: 3 }, (_, index) => (

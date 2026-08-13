@@ -129,7 +129,13 @@ export function BuilderView({ id }: { id: string }) {
           animate={{ opacity: builder.tab === "Results" ? 1 : 0, x: builder.tab === "Results" ? 0 : 12 }}
           transition={paneTransition}
         >
-          <ResultsView id={id} questions={builder.form.questions} />
+          <ResultsView
+            key={id}
+            id={id}
+            questions={builder.form.questions}
+            seed={builder.results}
+            live={builder.tab === "Results"}
+          />
         </motion.div>
         <motion.div
           className={`buildpane${builder.tab === "Settings" ? " is-on" : " is-off"}`}

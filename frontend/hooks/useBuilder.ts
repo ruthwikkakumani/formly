@@ -6,7 +6,7 @@ import { isViewer } from "@/lib/access";
 import { formsApi } from "@/lib/api";
 import { createQuestion } from "@/lib/constants";
 import { MESSAGES, messageFromUnknown } from "@/lib/errors";
-import { FormActivity, FormDefinition, FormEditor, Question, QuestionType } from "@/lib/types";
+import { FormActivity, FormDefinition, FormEditor, FormResults, Question, QuestionType } from "@/lib/types";
 import { useCurrentUser } from "./useCurrentUser";
 import { useToast } from "./useToast";
 
@@ -20,6 +20,7 @@ export function useBuilder(id: string, initialTab: "Build" | "Results" | "Settin
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState("");
+  const [results, setResults] = useState<FormResults>();
   const { toast, showToast } = useToast();
   const { actor, current } = useCurrentUser();
   const readOnly = isViewer(current);
@@ -37,6 +38,7 @@ export function useBuilder(id: string, initialTab: "Build" | "Results" | "Settin
       })
       .catch((err: unknown) => setError(messageFromUnknown(err, MESSAGES.formUnavailable)));
     void formsApi.activity(id).then(setActivity).catch(() => undefined);
+    void formsApi.results(id).then(setResults).catch(() => undefined);
   }, [id]);
 
   useEffect(() => {
@@ -178,6 +180,7 @@ export function useBuilder(id: string, initialTab: "Build" | "Results" | "Settin
   return {
     form,
     error,
+    results,
     selected,
     setSelected,
     tab,

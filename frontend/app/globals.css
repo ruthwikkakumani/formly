@@ -87,9 +87,6 @@ textarea:focus {
 
 button,
 a,
-input,
-select,
-textarea,
 .navon,
 .formcard,
 .settings-card,
@@ -100,12 +97,16 @@ textarea,
 .livepill,
 .rolechip,
 .tmplchip,
-.qoptionrow,
-.qoptionlist,
 .memberlist article,
 .settingsgrid article,
 .coming article {
   transition: var(--motion-props);
+}
+
+input,
+select,
+textarea {
+  transition: none;
 }
 
 .primary:hover:not(:disabled),

@@ -130,12 +130,22 @@
 .ask select {
   width: 100%;
   border: 0;
-  border-bottom: 2px solid #777;
+  border-bottom: 2px solid #c8c8c2;
+  border-radius: 0;
   background: transparent;
   padding: 15px 0;
   font-size: 20px;
   outline: 0;
   margin-top: 26px;
+  box-shadow: none;
+  transition: border-color 120ms linear;
+}
+
+.ask input:focus,
+.ask textarea:focus,
+.ask select:focus {
+  border-color: var(--ink);
+  box-shadow: none;
 }
 
 .ask textarea {
