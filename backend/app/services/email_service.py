@@ -36,7 +36,7 @@ def send_invite_email(to_email: str, name: str, role: str, accept_url: str) -> N
         return
     raise HTTPException(
         status_code=503,
-        detail="Email is not configured. Set RESEND_API_KEY or SMTP_HOST/SMTP_USER/SMTP_PASSWORD.",
+        detail="Invite emails aren't set up yet. Ask the workspace owner to configure email, then try again.",
     )
 
 
@@ -62,12 +62,15 @@ def _send_resend(to_email: str, subject: str, text: str, html: str) -> None:
     try:
         with urllib.request.urlopen(request, timeout=20) as response:
             if response.status >= 300:
-                raise HTTPException(status_code=502, detail="Invite email failed to send")
+                raise HTTPException(status_code=502, detail="We couldn't send the invite email. Please try again.")
     except urllib.error.HTTPError as error:
-        body = error.read().decode("utf-8", errors="ignore")
-        raise HTTPException(status_code=502, detail=body or "Invite email failed to send") from error
+        error.read()
+        raise HTTPException(status_code=502, detail="We couldn't send the invite email. Please try again.") from error
     except urllib.error.URLError as error:
-        raise HTTPException(status_code=502, detail="Could not reach the email provider") from error
+        raise HTTPException(
+            status_code=502,
+            detail="We couldn't reach the email provider. Please try again in a moment.",
+        ) from error
 
 
 def _send_smtp(to_email: str, subject: str, text: str, html: str) -> None:
@@ -87,10 +90,10 @@ def _send_smtp(to_email: str, subject: str, text: str, html: str) -> None:
     except smtplib.SMTPAuthenticationError as error:
         raise HTTPException(
             status_code=502,
-            detail="Gmail rejected the SMTP login. Use an app password, and set SMTP_FROM to the same address as SMTP_USER.",
+            detail="Email login was rejected. If you use Gmail, use an app password and send from the same address you signed in with.",
         ) from error
     except (TimeoutError, smtplib.SMTPException, OSError) as error:
         raise HTTPException(
             status_code=502,
-            detail="Could not send the invite email. Check SMTP_HOST/SMTP_PORT and try again.",
+            detail="We couldn't send the invite email. Check the email settings and try again.",
         ) from error

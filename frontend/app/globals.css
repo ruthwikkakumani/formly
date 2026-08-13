@@ -98,6 +98,7 @@ a {
 
 .toast.danger-toast {
   background: #7a1f1f;
+  color: #fff;
 }
 
 .loader,

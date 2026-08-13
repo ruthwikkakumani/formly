@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { formsApi } from "@/lib/api";
 import { createQuestion } from "@/lib/constants";
+import { MESSAGES, messageFromUnknown } from "@/lib/errors";
 import { FormActivity, FormDefinition, FormEditor, Question, QuestionType } from "@/lib/types";
 import { useCurrentUser } from "./useCurrentUser";
 import { useToast } from "./useToast";
@@ -15,6 +16,7 @@ export function useBuilder(id: string) {
   const [editors, setEditors] = useState<FormEditor[]>([]);
   const [activity, setActivity] = useState<FormActivity[]>([]);
   const [dirty, setDirty] = useState(false);
+  const [error, setError] = useState("");
   const { toast, showToast } = useToast();
   const { actor, current } = useCurrentUser();
   const loadedAt = useRef("");
@@ -22,10 +24,14 @@ export function useBuilder(id: string) {
   dirtyRef.current = dirty;
 
   useEffect(() => {
-    void formsApi.get(id).then((payload) => {
-      setForm(payload);
-      loadedAt.current = payload.updated_at || "";
-    });
+    void formsApi
+      .get(id)
+      .then((payload) => {
+        setForm(payload);
+        loadedAt.current = payload.updated_at || "";
+        setError("");
+      })
+      .catch((err: unknown) => setError(messageFromUnknown(err, MESSAGES.formUnavailable)));
     void formsApi.activity(id).then(setActivity).catch(() => undefined);
   }, [id]);
 
@@ -33,17 +39,20 @@ export function useBuilder(id: string) {
     if (!current) return;
     const tick = () => {
       void formsApi.heartbeat(id, actor).then(setEditors).catch(() => undefined);
-      void formsApi.get(id).then((remote) => {
-        const remoteStamp = remote.updated_at || "";
-        if (remoteStamp && remoteStamp !== loadedAt.current && !dirtyRef.current) {
-          setForm(remote);
-          loadedAt.current = remoteStamp;
-          showToast(`${remote.updated_by || "A teammate"} just saved — live update applied`);
-          void formsApi.activity(id).then(setActivity);
-        } else if (remoteStamp !== loadedAt.current && dirtyRef.current) {
-          showToast(`${remote.updated_by || "A teammate"} saved a newer version. Save yours or reload.`);
-        }
-      });
+      void formsApi
+        .get(id)
+        .then((remote) => {
+          const remoteStamp = remote.updated_at || "";
+          if (remoteStamp && remoteStamp !== loadedAt.current && !dirtyRef.current) {
+            setForm(remote);
+            loadedAt.current = remoteStamp;
+            showToast(`${remote.updated_by || "A teammate"} just saved — live update applied`);
+            void formsApi.activity(id).then(setActivity);
+          } else if (remoteStamp !== loadedAt.current && dirtyRef.current) {
+            showToast(`${remote.updated_by || "A teammate"} saved a newer version. Save yours or reload.`);
+          }
+        })
+        .catch(() => undefined);
     };
     tick();
     const timer = window.setInterval(tick, 4000);
@@ -100,7 +109,7 @@ export function useBuilder(id: string) {
       setActivity(await formsApi.activity(id));
       showToast(`Saved by ${current?.name || "you"}`);
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "We couldn't save just now. Please try again.", "error");
+      showToast(messageFromUnknown(err, MESSAGES.formSaveFailed), "error");
       throw err;
     }
   }
@@ -115,7 +124,7 @@ export function useBuilder(id: string) {
       setActivity(await formsApi.activity(id));
       showToast(form.status === "draft" ? "Your form is live" : "Form unpublished");
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "We couldn't update publish status. Please try again.", "error");
+      showToast(messageFromUnknown(err, MESSAGES.publishFailed), "error");
     }
   }
 
@@ -125,12 +134,13 @@ export function useBuilder(id: string) {
       await navigator.clipboard.writeText(`${window.location.origin}/f/${form.slug}`);
       showToast("Share link copied");
     } catch {
-      showToast("Couldn't copy the link. Select it from the address bar instead.", "error");
+      showToast(MESSAGES.copyFailed, "error");
     }
   }
 
   return {
     form,
+    error,
     selected,
     setSelected,
     tab,

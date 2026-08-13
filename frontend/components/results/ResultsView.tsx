@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Toast } from "@/components/shared/Toast";
 import { formsApi } from "@/lib/api";
+import { MESSAGES, messageFromUnknown } from "@/lib/errors";
 import { FormResponse, FormStats, Question } from "@/lib/types";
 import { useToast } from "@/hooks/useToast";
 import { ResponseModal } from "./ResponseModal";
@@ -26,7 +27,7 @@ export function ResultsView({ id, questions }: { id: string; questions: Question
         setStats(nextStats);
       })
       .catch((err: unknown) => {
-        showToast(err instanceof Error ? err.message : "We couldn't load responses.", "error");
+        showToast(messageFromUnknown(err, MESSAGES.responsesLoadFailed), "error");
       })
       .finally(() => setLoading(false));
   }, [id, showToast]);
@@ -44,7 +45,7 @@ export function ResultsView({ id, questions }: { id: string; questions: Question
             void formsApi
               .exportCsv(id)
               .then(() => showToast("CSV downloaded"))
-              .catch((err: unknown) => showToast(err instanceof Error ? err.message : "Export failed", "error"))
+              .catch((err: unknown) => showToast(messageFromUnknown(err, MESSAGES.exportFailed), "error"))
           }
         >
           Export CSV

@@ -5,6 +5,8 @@ import { FormEvent, useState } from "react";
 
 import { authApi } from "@/lib/api";
 import { setToken } from "@/lib/auth";
+import { MESSAGES, messageFromUnknown } from "@/lib/errors";
+import { isValidEmail } from "@/lib/validation";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -14,6 +16,10 @@ export default function LoginPage() {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (!isValidEmail(email)) {
+      setError(MESSAGES.invalidEmail);
+      return;
+    }
     setBusy(true);
     setError("");
     try {
@@ -21,7 +27,7 @@ export default function LoginPage() {
       setToken(session.token);
       window.location.href = "/";
     } catch (err) {
-      setError(err instanceof Error ? err.message : "We couldn't sign you in. Please try again.");
+      setError(messageFromUnknown(err, MESSAGES.signInFailed));
     } finally {
       setBusy(false);
     }
@@ -45,7 +51,11 @@ export default function LoginPage() {
           value={password}
           onChange={(event) => setPassword(event.target.value)}
         />
-        {error ? <p className="autherr">{error}</p> : null}
+        {error ? (
+          <p className="autherr" role="alert">
+            {error}
+          </p>
+        ) : null}
         <button className="primary" type="submit" disabled={busy}>
           {busy ? "Signing in…" : "Sign in"}
         </button>

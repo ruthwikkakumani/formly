@@ -18,9 +18,9 @@ def get_current_user(
     db: Session = Depends(get_db),
 ) -> Member:
     if not creds or creds.scheme.lower() != "bearer":
-        raise HTTPException(status_code=401, detail="Sign in to continue")
+        raise HTTPException(status_code=401, detail="Sign in to continue.")
     payload = read_token(creds.credentials)
     member = db.query(Member).filter(Member.id == int(payload["sub"])).first()
     if not member:
-        raise HTTPException(status_code=401, detail="Sign in to continue")
+        raise HTTPException(status_code=401, detail="Sign in to continue.")
     return member

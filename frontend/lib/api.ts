@@ -1,5 +1,5 @@
 import { authHeaders, getToken } from "./auth";
-import { messageFromDetail, messageFromNetworkError, messageFromStatus } from "./errors";
+import { contextFromPath, messageFromDetail, messageFromNetworkError, messageFromStatus, MESSAGES } from "./errors";
 import { FormActivity, FormDefinition, FormEditor, FormResponse, FormStats, WorkspaceInvite, WorkspaceMember } from "./types";
 
 declare global {
@@ -40,7 +40,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(messageFromStatus(response.status, messageFromDetail(payload.detail)));
+    throw new Error(messageFromStatus(response.status, messageFromDetail(payload.detail), contextFromPath(path)));
   }
   if (response.status === 204) return undefined as T;
   return response.json();
@@ -68,8 +68,18 @@ export const formsApi = {
   responses: (id: string | number) => request<FormResponse[]>(`/forms/${id}/responses`),
   stats: (id: string | number) => request<FormStats>(`/forms/${id}/stats`),
   exportCsv: async (id: string | number) => {
-    const response = await fetch(`${apiBase()}/forms/${id}/responses.csv`, { headers: authHeaders() });
-    if (!response.ok) throw new Error("We couldn't export responses just now. Please try again.");
+    let response: Response;
+    try {
+      response = await fetch(`${apiBase()}/forms/${id}/responses.csv`, { headers: authHeaders() });
+    } catch (error) {
+      throw new Error(messageFromNetworkError(error));
+    }
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(
+        messageFromStatus(response.status, messageFromDetail(payload.detail), "form") || MESSAGES.exportFailed,
+      );
+    }
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");

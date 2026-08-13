@@ -36,4 +36,4 @@ def read_token(token: str) -> dict:
     try:
         return jwt.decode(token, settings.auth_secret, algorithms=["HS256"])
     except jwt.PyJWTError as error:
-        raise HTTPException(status_code=401, detail="Sign in again") from error
+        raise HTTPException(status_code=401, detail="Your session expired. Sign in again.") from error

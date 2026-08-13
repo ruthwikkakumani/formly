@@ -30,7 +30,7 @@ export function PublicFormView({ slug }: { slug: string }) {
   if (flow.step === "error" || !flow.form) {
     return (
       <main className="public error">
-        <h1>{flow.error || "This form is not available"}</h1>
+        <h1>{flow.error || "This form isn't available"}</h1>
       </main>
     );
   }

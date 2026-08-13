@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { formsApi } from "@/lib/api";
 import { createQuestion } from "@/lib/constants";
+import { MESSAGES, messageFromUnknown } from "@/lib/errors";
 import { FormDefinition } from "@/lib/types";
 import { useCurrentUser } from "./useCurrentUser";
 import { useToast } from "./useToast";
@@ -20,7 +21,7 @@ export function useForms() {
       setForms(await formsApi.list());
       setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "We couldn't load your forms.");
+      setError(messageFromUnknown(err, MESSAGES.formsLoadFailed));
     } finally {
       setLoading(false);
     }
@@ -36,7 +37,7 @@ export function useForms() {
       showToast(ok);
       await load();
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Something went wrong. Please try again.", "error");
+      showToast(messageFromUnknown(err), "error");
     }
   }
 
@@ -50,7 +51,7 @@ export function useForms() {
       });
       window.location.href = `/builder/${form.id}`;
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "We couldn't create the form. Please try again.", "error");
+      showToast(messageFromUnknown(err, MESSAGES.formCreateFailed), "error");
     }
   }
 
@@ -78,7 +79,7 @@ export function useForms() {
       await navigator.clipboard.writeText(`${window.location.origin}/f/${slug}`);
       showToast("Share link copied");
     } catch {
-      showToast("Couldn't copy the link. Please copy it from the browser instead.", "error");
+      showToast(MESSAGES.copyFailed, "error");
     }
   }
 

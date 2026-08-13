@@ -13,6 +13,14 @@ import { QuestionTypePicker } from "./QuestionTypePicker";
 
 export function BuilderView({ id }: { id: string }) {
   const builder = useBuilder(id);
+  if (builder.error) {
+    return (
+      <div className="empty">
+        <h2>Form unavailable</h2>
+        <p>{builder.error}</p>
+      </div>
+    );
+  }
   if (!builder.form) return <div className="loader">Loading your form…</div>;
   const question = builder.form.questions[builder.selected];
 

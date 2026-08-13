@@ -8,7 +8,7 @@ from app.core.config import settings
 from app.core.security import hash_password
 from app.models import Member
 from app.models.invite import WorkspaceInvite, _invite_expiry
-from app.schemas.member import MemberPayload
+from app.schemas.member import EMAIL_PATTERN, MemberPayload
 from app.services.auth_service import AuthService
 from app.services.email_service import send_invite_email
 
@@ -37,10 +37,14 @@ class InviteService:
 
     def create(self, db: Session, payload: MemberPayload) -> dict:
         self._expire_stale(db)
-        email = str(payload.email).lower()
+        email = str(payload.email).strip().lower()
+        if not payload.name.strip():
+            raise HTTPException(status_code=422, detail="Enter a name.")
+        if not EMAIL_PATTERN.match(email):
+            raise HTTPException(status_code=422, detail="Enter a valid email address.")
         role = payload.role if payload.role in {"editor", "viewer"} else "editor"
         if db.query(Member).filter(Member.email == email).first():
-            raise HTTPException(status_code=409, detail="That teammate is already in the workspace")
+            raise HTTPException(status_code=409, detail="That person is already in this workspace.")
         invite = (
             db.query(WorkspaceInvite)
             .filter(WorkspaceInvite.email == email, WorkspaceInvite.status == "pending")
@@ -94,9 +98,12 @@ class InviteService:
     def revoke(self, db: Session, invite_id: int) -> None:
         invite = db.query(WorkspaceInvite).filter(WorkspaceInvite.id == invite_id).first()
         if not invite:
-            raise HTTPException(status_code=404, detail="Invite not found")
+            raise HTTPException(
+                status_code=404,
+                detail="This invite is no longer available. It may have expired or been revoked.",
+            )
         if invite.status != "pending":
-            raise HTTPException(status_code=400, detail="Only pending invites can be revoked")
+            raise HTTPException(status_code=400, detail="Only pending invites can be revoked.")
         invite.status = "revoked"
         db.commit()
 
@@ -104,11 +111,17 @@ class InviteService:
         self._expire_stale(db)
         invite = db.query(WorkspaceInvite).filter(WorkspaceInvite.token == token).first()
         if not invite:
-            raise HTTPException(status_code=404, detail="Invite not found")
+            raise HTTPException(
+                status_code=404,
+                detail="This invite is no longer available. It may have expired or been revoked.",
+            )
         if invite.status == "accepted":
-            raise HTTPException(status_code=409, detail="This invite was already accepted")
+            raise HTTPException(status_code=409, detail="This invite was already accepted. Sign in instead.")
         if invite.status != "pending":
-            raise HTTPException(status_code=400, detail="This invite is no longer valid")
+            raise HTTPException(
+                status_code=400,
+                detail="This invite is no longer valid. Ask a teammate to send a new one.",
+            )
         return invite
 
     def _expire_stale(self, db: Session) -> None:

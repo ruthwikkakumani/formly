@@ -2,6 +2,7 @@
 
 import { choiceOptions, paymentAmount } from "@/lib/constants";
 import { publicFormsApi } from "@/lib/api";
+import { MESSAGES, messageFromUnknown } from "@/lib/errors";
 import { Question } from "@/lib/types";
 
 export function QuestionInput({
@@ -55,7 +56,7 @@ export function QuestionInput({
               onChange(await publicFormsApi.upload(slug, file));
             } catch (err) {
               onChange("");
-              window.alert(err instanceof Error ? err.message : "We couldn't upload that file.");
+              window.alert(messageFromUnknown(err, MESSAGES.uploadFailed));
             }
           }}
         />

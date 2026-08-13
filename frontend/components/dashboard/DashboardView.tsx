@@ -30,7 +30,7 @@ export function DashboardView() {
         {workspace.loading ? (
           <div className="empty">Loading your workspace…</div>
         ) : workspace.error ? (
-          <EmptyState title="Can't reach the API" body={workspace.error} />
+          <EmptyState title="We couldn't load your forms" body={workspace.error} />
         ) : workspace.forms.length ? (
           <section className="formgrid">
             {workspace.forms.map((form) => (

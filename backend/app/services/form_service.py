@@ -47,13 +47,16 @@ class FormService:
     def require(self, db: Session, form_id: int) -> Form:
         form = self.repo.get(db, form_id)
         if not form:
-            raise HTTPException(status_code=404, detail="Form not found")
+            raise HTTPException(status_code=404, detail="We couldn't find that form. It may have been removed.")
         return form
 
     def require_public(self, db: Session, slug: str) -> Form:
         form = self.repo.get_public(db, slug)
         if not form:
-            raise HTTPException(status_code=404, detail="This form is not available")
+            raise HTTPException(
+                status_code=404,
+                detail="This form isn't available. It may be unpublished or have been removed.",
+            )
         return form
 
     def create(self, db: Session, payload: FormPayload) -> Form:

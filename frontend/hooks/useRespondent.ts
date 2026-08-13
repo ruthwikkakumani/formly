@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { publicFormsApi } from "@/lib/api";
+import { MESSAGES, messageFromUnknown } from "@/lib/errors";
 import { FormDefinition, Question } from "@/lib/types";
 import { nextIndex, validateAnswer } from "@/lib/validation";
 
@@ -26,8 +27,8 @@ export function useRespondent(slug: string) {
         setForm(payload);
         setStep("welcome");
       })
-      .catch(() => {
-        setError("This form is not available");
+      .catch((err: unknown) => {
+        setError(messageFromUnknown(err, MESSAGES.formUnavailable));
         setStep("error");
       });
   }, [slug]);
@@ -54,7 +55,7 @@ export function useRespondent(slug: string) {
       });
       setStep("thanks");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(messageFromUnknown(err));
     }
   }
 

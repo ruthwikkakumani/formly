@@ -2,11 +2,15 @@ import { LogicRule, Question } from "./types";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+export function isValidEmail(value: string): boolean {
+  return EMAIL.test((value || "").trim());
+}
+
 export function validateAnswer(question: Question, value: string): string | null {
   const answer = (value || "").trim();
   if (question.required && !answer) return "Please fill this in";
   if (!answer) return null;
-  if (question.type === "email" && !EMAIL.test(answer)) return "Hmm… that email doesn’t look valid";
+  if (question.type === "email" && !isValidEmail(answer)) return "Enter a valid email address.";
   if (question.type === "number" && !Number.isFinite(Number(answer))) return "Please enter a number";
   if (question.type === "rating" && !["1", "2", "3", "4", "5"].includes(answer)) return "Please choose a rating from 1 to 5";
   if (question.type === "payment" && !answer.startsWith("Paid")) return "Please complete the payment to continue";

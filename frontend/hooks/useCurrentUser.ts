@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { authApi, teamApi } from "@/lib/api";
 import { clearToken, getToken } from "@/lib/auth";
+import { MESSAGES, messageFromUnknown } from "@/lib/errors";
 import { WorkspaceMember } from "@/lib/types";
 
 export function useCurrentUser() {
@@ -23,8 +24,8 @@ export function useCurrentUser() {
         setMembers(list);
         setError("");
       })
-      .catch((err: Error) => {
-        setError(err.message);
+      .catch((err: unknown) => {
+        setError(messageFromUnknown(err, MESSAGES.unauthenticated));
         clearToken();
       })
       .finally(() => setReady(true));

@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useState } from "react";
 
 import { inviteApi } from "@/lib/api";
 import { setToken } from "@/lib/auth";
+import { MESSAGES, messageFromUnknown } from "@/lib/errors";
 
 export default function AcceptInvitePage() {
   const params = useParams<{ token: string }>();
@@ -24,7 +25,7 @@ export default function AcceptInvitePage() {
         setEmail(invite.email);
         setRole(invite.role);
       })
-      .catch((err: Error) => setError(err.message || "Invite not found"));
+      .catch((err: unknown) => setError(messageFromUnknown(err, MESSAGES.inviteUnavailable)));
   }, [token]);
 
   async function accept(event: FormEvent) {
@@ -35,7 +36,7 @@ export default function AcceptInvitePage() {
       setToken(session.token);
       window.location.href = "/";
     } catch (err) {
-      setError(err instanceof Error ? err.message : "We couldn't accept this invite. Please try again.");
+      setError(messageFromUnknown(err, MESSAGES.inviteAcceptFailed));
     } finally {
       setBusy(false);
     }
@@ -49,7 +50,9 @@ export default function AcceptInvitePage() {
       {error && !email ? (
         <>
           <h1>Invite unavailable</h1>
-          <p>{error}</p>
+          <p className="autherr" role="alert">
+            {error}
+          </p>
         </>
       ) : (
         <>
@@ -61,7 +64,11 @@ export default function AcceptInvitePage() {
           </p>
           <form className="authform" onSubmit={(event) => void accept(event)}>
             <input required minLength={8} type="password" placeholder="Choose a password" value={password} onChange={(event) => setPassword(event.target.value)} />
-            {error ? <p className="autherr">{error}</p> : null}
+            {error ? (
+              <p className="autherr" role="alert">
+                {error}
+              </p>
+            ) : null}
             <button className="primary" disabled={!email || busy} type="submit">
               {busy ? "Joining…" : "Accept invite"}
             </button>

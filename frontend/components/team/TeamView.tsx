@@ -5,7 +5,9 @@ import { FormEvent, useEffect, useState } from "react";
 import { Toast } from "@/components/shared/Toast";
 import { useToast } from "@/hooks/useToast";
 import { teamApi } from "@/lib/api";
+import { MESSAGES, messageFromUnknown } from "@/lib/errors";
 import { MemberRole, WorkspaceInvite, WorkspaceMember } from "@/lib/types";
+import { isValidEmail } from "@/lib/validation";
 
 export function TeamView() {
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
@@ -14,6 +16,7 @@ export function TeamView() {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<MemberRole>("editor");
   const [sending, setSending] = useState(false);
+  const [formError, setFormError] = useState("");
   const { toast, showToast } = useToast();
 
   async function load() {
@@ -22,7 +25,7 @@ export function TeamView() {
       setMembers(nextMembers);
       setInvites(nextInvites);
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Couldn't load the workspace team.", "error");
+      showToast(messageFromUnknown(error, MESSAGES.teamLoadFailed), "error");
     }
   }
 
@@ -32,15 +35,26 @@ export function TeamView() {
 
   async function invite(event: FormEvent) {
     event.preventDefault();
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+    if (!trimmedName) {
+      setFormError(MESSAGES.missingName);
+      return;
+    }
+    if (!isValidEmail(trimmedEmail)) {
+      setFormError(MESSAGES.invalidEmail);
+      return;
+    }
+    setFormError("");
     setSending(true);
     try {
-      await teamApi.invite({ name, email, role });
+      await teamApi.invite({ name: trimmedName, email: trimmedEmail, role });
       setName("");
       setEmail("");
       showToast("Invite email sent. They join only after accepting the link.");
       await load();
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Invite failed", "error");
+      showToast(messageFromUnknown(error, MESSAGES.inviteSendFailed), "error");
     } finally {
       setSending(false);
     }
@@ -54,9 +68,28 @@ export function TeamView() {
         Send an email invite. They are not added until they open the link and accept. Ignore or revoke means they stay
         out of the workspace.
       </p>
-      <form className="invite" onSubmit={(event) => void invite(event)}>
-        <input required placeholder="Name" value={name} onChange={(event) => setName(event.target.value)} />
-        <input required type="email" placeholder="Email" value={email} onChange={(event) => setEmail(event.target.value)} />
+      <form className="invite" noValidate onSubmit={(event) => void invite(event)}>
+        <input
+          required
+          placeholder="Name"
+          value={name}
+          onChange={(event) => {
+            setName(event.target.value);
+            if (formError) setFormError("");
+          }}
+        />
+        <input
+          required
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          placeholder="Email"
+          value={email}
+          onChange={(event) => {
+            setEmail(event.target.value);
+            if (formError) setFormError("");
+          }}
+        />
         <select value={role} onChange={(event) => setRole(event.target.value as MemberRole)}>
           <option value="editor">Editor</option>
           <option value="viewer">Viewer</option>
@@ -64,6 +97,11 @@ export function TeamView() {
         <button className="primary" type="submit" disabled={sending}>
           {sending ? "Sending…" : "Send invite"}
         </button>
+        {formError ? (
+          <p className="autherr" role="alert">
+            {formError}
+          </p>
+        ) : null}
       </form>
       {invites.length ? (
         <div className="memberlist">
@@ -85,7 +123,7 @@ export function TeamView() {
                     showToast("Invite revoked");
                     await load();
                   } catch (error) {
-                    showToast(error instanceof Error ? error.message : "Couldn't revoke that invite.", "error");
+                    showToast(messageFromUnknown(error, MESSAGES.inviteRevokeFailed), "error");
                   }
                 }}
               >
@@ -113,7 +151,7 @@ export function TeamView() {
                     showToast("Member removed");
                     await load();
                   } catch (error) {
-                    showToast(error instanceof Error ? error.message : "Couldn't remove that member.", "error");
+                    showToast(messageFromUnknown(error, MESSAGES.memberRemoveFailed), "error");
                   }
                 }}
               >

@@ -88,7 +88,15 @@
 }
 
 .autherr {
-  color: var(--danger) !important;
+  color: #7a1f1f !important;
+  background: #fdecec;
+  border: 1px solid #f0c8c8;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 2px 0 4px !important;
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 500;
 }
 
 .whoami {
@@ -143,6 +151,10 @@
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 11px 12px;
+}
+
+.invite .autherr {
+  grid-column: 1 / -1;
 }
 
 .memberlist article {

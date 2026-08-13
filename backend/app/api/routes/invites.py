@@ -14,7 +14,10 @@ service = InviteService()
 
 def _can_manage(user: Member) -> None:
     if user.role not in {"owner", "editor"}:
-        raise HTTPException(status_code=403, detail="Editors can manage invites")
+        raise HTTPException(
+            status_code=403,
+            detail="You don't have permission to manage invites. Ask an editor or the owner.",
+        )
 
 
 @router.get("/workspace/invites")

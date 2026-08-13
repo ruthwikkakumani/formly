@@ -5,6 +5,8 @@ import { FormEvent, useState } from "react";
 
 import { authApi } from "@/lib/api";
 import { setToken } from "@/lib/auth";
+import { MESSAGES, messageFromUnknown } from "@/lib/errors";
+import { isValidEmail } from "@/lib/validation";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -15,14 +17,22 @@ export default function RegisterPage() {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (!name.trim()) {
+      setError(MESSAGES.missingName);
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError(MESSAGES.invalidEmail);
+      return;
+    }
     setBusy(true);
     setError("");
     try {
-      const session = await authApi.register({ name, email, password });
+      const session = await authApi.register({ name: name.trim(), email, password });
       setToken(session.token);
       window.location.href = "/";
     } catch (err) {
-      setError(err instanceof Error ? err.message : "We couldn't create your account. Please try again.");
+      setError(messageFromUnknown(err, MESSAGES.registerFailed));
     } finally {
       setBusy(false);
     }
@@ -47,7 +57,11 @@ export default function RegisterPage() {
           value={password}
           onChange={(event) => setPassword(event.target.value)}
         />
-        {error ? <p className="autherr">{error}</p> : null}
+        {error ? (
+          <p className="autherr" role="alert">
+            {error}
+          </p>
+        ) : null}
         <button className="primary" type="submit" disabled={busy}>
           {busy ? "Creating…" : "Create account"}
         </button>
