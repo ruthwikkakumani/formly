@@ -45,13 +45,13 @@ def rename_form(form_id: int, payload: RenamePayload, db: Session = Depends(get_
 
 
 @router.delete("/{form_id}")
-def delete_form(form_id: int, db: Session = Depends(get_db)):
+def delete_form(form_id: int, db: Session = Depends(get_db), user: Member = Depends(get_current_user)):
     form_service.delete(db, form_id)
     return {"ok": True}
 
 
 @router.post("/{form_id}/duplicate")
-def duplicate_form(form_id: int, db: Session = Depends(get_db)):
+def duplicate_form(form_id: int, db: Session = Depends(get_db), user: Member = Depends(get_current_user)):
     return form_service.serialize(form_service.duplicate(db, form_id))
 
 

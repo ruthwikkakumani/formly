@@ -155,6 +155,14 @@ export const authApi = {
   login: (body: { email: string; password: string }) =>
     request<{ token: string; user: WorkspaceMember }>("/auth/login", json("POST", body)),
   me: () => request<WorkspaceMember>("/auth/me"),
+  updateProfile: (body: { name: string }) => request<WorkspaceMember>("/auth/me", json("PATCH", body)),
+  changePassword: (body: { current_password: string; new_password: string }) =>
+    request<{ ok: boolean; message: string }>("/auth/password", json("POST", body)),
+  forgotPassword: (email: string) =>
+    request<{ ok: boolean; message: string; reset_url?: string }>("/auth/forgot-password", json("POST", { email })),
+  previewReset: (token: string) => request<{ email: string; expires_at: string }>(`/auth/reset-password/${token}`),
+  resetPassword: (token: string, password: string) =>
+    request<{ token: string; user: WorkspaceMember }>(`/auth/reset-password/${token}`, json("POST", { password })),
 };
 
 export const publicFormsApi = {

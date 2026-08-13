@@ -12,6 +12,8 @@ form_service = FormService()
 response_service = ResponseService()
 bearer = HTTPBearer(auto_error=False)
 
+OWNER_DETAIL = "Only the workspace owner can invite or remove teammates."
+
 
 def get_current_user(
     creds: HTTPAuthorizationCredentials | None = Depends(bearer),
@@ -24,3 +26,9 @@ def get_current_user(
     if not member:
         raise HTTPException(status_code=401, detail="Sign in to continue.")
     return member
+
+
+def require_owner(user: Member = Depends(get_current_user)) -> Member:
+    if user.role != "owner":
+        raise HTTPException(status_code=403, detail=OWNER_DETAIL)
+    return user

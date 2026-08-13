@@ -57,6 +57,19 @@
   padding: 8px;
 }
 
+.settingsgrid label.stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.settingsgrid label.stack textarea {
+  width: 100%;
+  min-height: 110px;
+  margin-bottom: 0;
+}
+
 .settingsgrid .hint {
   color: var(--muted);
   font-size: 13px;

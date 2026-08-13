@@ -41,6 +41,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         <nav>
           {item("/", "Home")}
           {item("/team", "Workspace")}
+          {item("/settings", "Settings")}
         </nav>
         <div className="sidecard">
           <b>Signed in</b>

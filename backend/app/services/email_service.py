@@ -58,6 +58,126 @@ def deliver_invite_email(invite_id: int, to_email: str, name: str, role: str, ac
     _store_invite_email_result(invite_id, ok, message)
 
 
+def schedule_reset_email(to_email: str, name: str, reset_url: str) -> None:
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        threading.Thread(
+            target=deliver_reset_email,
+            args=(to_email, name, reset_url),
+            daemon=True,
+            name="reset-smtp",
+        ).start()
+        return
+    task = loop.create_task(asyncio.to_thread(deliver_reset_email, to_email, name, reset_url))
+    _pending_mail_tasks.add(task)
+    task.add_done_callback(_pending_mail_tasks.discard)
+
+
+def deliver_reset_email(to_email: str, name: str, reset_url: str) -> None:
+    print(f"Password reset email background send starting to={to_email}", flush=True)
+    try:
+        ok, message = send_reset_email(to_email, name, reset_url)
+        print(f"Password reset email result ok={ok} message={message!r}", flush=True)
+    except Exception as error:
+        blocked = _is_smtp_blocked(error)
+        if blocked:
+            print("Railway blocked SMTP; password reset token was still created.", flush=True)
+        else:
+            _log_exception("Password reset email SMTP failed", error)
+
+
+def send_reset_email(to_email: str, name: str, reset_url: str) -> tuple[bool, str]:
+    display_name = _invite_display_name(name)
+    subject = "Reset your Formly password"
+    text = (
+        f"Hi {display_name},\n\n"
+        "We received a request to reset your Formly password. "
+        "Open this link to choose a new one:\n\n"
+        f"{reset_url}\n\n"
+        "This link expires in 1 hour. If you didn't ask for this, you can ignore the email.\n"
+    )
+    html = _reset_email_html(display_name, reset_url)
+    if settings.smtp_host.strip() and settings.smtp_user.strip():
+        return _send_smtp(to_email, subject, text, html)
+    print(f"Password reset email SMTP failed: {NOT_CONFIGURED}", flush=True)
+    return False, NOT_CONFIGURED
+
+
+def _reset_email_html(name: str, reset_url: str) -> str:
+    safe_name = escape(name)
+    safe_url = escape(reset_url, quote=True)
+    serif = "Georgia,'Times New Roman',Times,serif"
+    sans = "Arial,Helvetica,sans-serif"
+    return f"""<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reset your Formly password</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#f4f1ea;">
+    <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+      Hi {safe_name} — reset your Formly password with this link. It expires in 1 hour.
+    </div>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#f4f1ea;">
+      <tr>
+        <td align="center" style="padding:48px 20px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="540" style="width:100%;max-width:540px;background-color:#fffef9;border:1px solid #ece8df;border-radius:20px;">
+            <tr>
+              <td height="5" style="height:5px;line-height:5px;font-size:0;background-color:#ff6d5a;border-radius:20px 20px 0 0;">&nbsp;</td>
+            </tr>
+            <tr>
+              <td style="padding:40px 48px 0 48px;">
+                <p style="margin:0;font-family:{serif};font-size:22px;font-weight:400;letter-spacing:-0.4px;line-height:1;color:#191919;">
+                  formly<span style="color:#ff6d5a;">•</span>
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:36px 48px 0 48px;">
+                <p style="margin:0 0 8px 0;font-family:{sans};font-size:11px;font-weight:700;letter-spacing:1.8px;color:#8a8680;">
+                  PASSWORD RESET
+                </p>
+                <p style="margin:0 0 20px 0;font-family:{serif};font-size:32px;font-weight:400;letter-spacing:-0.6px;line-height:1.2;color:#191919;">
+                  Hi {safe_name},
+                </p>
+                <p style="margin:0 0 32px 0;font-family:{sans};font-size:16px;line-height:1.65;color:#3d3d3a;">
+                  We received a request to reset your Formly password. Choose a new one with the button below.
+                </p>
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td align="center" bgcolor="#191919" style="border-radius:999px;">
+                      <a href="{safe_url}" target="_blank" style="display:inline-block;padding:14px 28px;font-family:{sans};font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:999px;">
+                        Reset password
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px 48px 44px 48px;border-top:1px solid #ece8df;">
+                <p style="margin:0 0 6px 0;font-family:{sans};font-size:12px;line-height:1.5;color:#8a8680;">
+                  Or paste this link into your browser
+                </p>
+                <p style="margin:0 0 20px 0;font-family:{sans};font-size:12px;line-height:1.55;color:#191919;word-break:break-all;">
+                  {safe_url}
+                </p>
+                <p style="margin:0;font-family:{sans};font-size:12px;line-height:1.5;color:#b0aca4;">
+                  This link expires in 1 hour. If you didn't ask for this, you can ignore the email.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+
+
 def send_invite_email(to_email: str, name: str, role: str, accept_url: str) -> tuple[bool, str]:
     display_name = _invite_display_name(name)
     role_phrase = _invite_role_phrase(role)

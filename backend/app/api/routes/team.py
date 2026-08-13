@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_owner
 from app.db.session import get_db
 from app.models import Member
 from app.schemas.member import MemberPayload
@@ -13,27 +13,17 @@ service = TeamService()
 invites = InviteService()
 
 
-def _can_manage(user: Member) -> None:
-    if user.role not in {"owner", "editor"}:
-        raise HTTPException(
-            status_code=403,
-            detail="You don't have permission to manage the workspace. Ask an editor or the owner.",
-        )
-
-
 @router.get("")
 def list_members(db: Session = Depends(get_db)):
     return service.list(db)
 
 
 @router.post("")
-def invite_member(payload: MemberPayload, db: Session = Depends(get_db), user: Member = Depends(get_current_user)):
-    _can_manage(user)
+def invite_member(payload: MemberPayload, db: Session = Depends(get_db), user: Member = Depends(require_owner)):
     return invites.create(db, payload)
 
 
 @router.delete("/{member_id}")
-def remove_member(member_id: int, db: Session = Depends(get_db), user: Member = Depends(get_current_user)):
-    _can_manage(user)
+def remove_member(member_id: int, db: Session = Depends(get_db), user: Member = Depends(require_owner)):
     service.remove(db, member_id)
     return {"ok": True}

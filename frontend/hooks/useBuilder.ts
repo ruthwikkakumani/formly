@@ -9,10 +9,10 @@ import { FormActivity, FormDefinition, FormEditor, Question, QuestionType } from
 import { useCurrentUser } from "./useCurrentUser";
 import { useToast } from "./useToast";
 
-export function useBuilder(id: string) {
+export function useBuilder(id: string, initialTab: "Build" | "Results" | "Settings" = "Build") {
   const [form, setForm] = useState<FormDefinition>();
   const [selected, setSelected] = useState(0);
-  const [tab, setTab] = useState<"Build" | "Results" | "Settings">("Build");
+  const [tab, setTab] = useState<"Build" | "Results" | "Settings">(initialTab);
   const [editors, setEditors] = useState<FormEditor[]>([]);
   const [activity, setActivity] = useState<FormActivity[]>([]);
   const [dirty, setDirty] = useState(false);

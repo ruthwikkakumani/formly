@@ -91,5 +91,10 @@ class Settings(BaseSettings):
     def cors_origin_list(self) -> list[str]:
         return parse_cors_origins(self.cors_origins)
 
+    @property
+    def is_local_dev(self) -> bool:
+        host = (self.frontend_url or "").lower()
+        return "localhost" in host or "127.0.0.1" in host
+
 
 settings = Settings()

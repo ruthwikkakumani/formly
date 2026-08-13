@@ -1,4 +1,4 @@
-export type ErrorContext = "login" | "register" | "invite" | "form" | "api";
+export type ErrorContext = "login" | "register" | "invite" | "form" | "api" | "reset";
 
 export const MESSAGES = {
   network: "We couldn't connect right now. Check your internet and try again.",
@@ -7,7 +7,7 @@ export const MESSAGES = {
   login: "That email or password is incorrect.",
   unauthenticated: "Sign in to continue.",
   sessionExpired: "Your session expired. Sign in again.",
-  forbidden: "You don't have access to do that. Ask a teammate for an invite.",
+  forbidden: "You don't have permission to do that. Ask the workspace owner.",
   registerExists: "An account with this email already exists. Sign in instead.",
   registerOwnerExists:
     "This workspace already has an owner. Sign in with that account, or ask them to send you an invite.",
@@ -37,6 +37,13 @@ export const MESSAGES = {
   inviteRevokeFailed: "We couldn't revoke that invite.",
   memberRemoveFailed: "We couldn't remove that teammate.",
   copyFailed: "We couldn't copy the link. Please copy it from the address bar instead.",
+  resetUnavailable: "This reset link is no longer valid. Request a new one from the sign-in page.",
+  resetFailed: "We couldn't update your password. Please try again.",
+  forgotFailed: "We couldn't send a reset email. Please try again.",
+  passwordMismatch: "Those passwords don't match.",
+  passwordTooShort: "Use a password with at least 8 characters.",
+  profileSaveFailed: "We couldn't save your account details. Please try again.",
+  passwordChangeFailed: "We couldn't update your password. Please try again.",
 } as const;
 
 const NETWORK_MARKERS = [
@@ -119,6 +126,7 @@ export function messageFromStatus(status: number, detail: string, context: Error
   if (status === 404) {
     if (context === "invite") return MESSAGES.inviteUnavailable;
     if (context === "form") return MESSAGES.formUnavailable;
+    if (context === "reset") return MESSAGES.resetUnavailable;
     return MESSAGES.notFound;
   }
   if (status === 409) return context === "register" || context === "login" ? MESSAGES.registerExists : MESSAGES.conflict;
@@ -162,6 +170,7 @@ export function messageFromUnknown(error: unknown, fallback: string = MESSAGES.g
 export function contextFromPath(path: string): ErrorContext {
   if (path.startsWith("/auth/login")) return "login";
   if (path.startsWith("/auth/register")) return "register";
+  if (path.startsWith("/auth/forgot-password") || path.startsWith("/auth/reset-password")) return "reset";
   if (path.startsWith("/invites/") || path.startsWith("/workspace/invites")) return "invite";
   if (path.startsWith("/public/") || path.startsWith("/forms/")) return "form";
   return "api";

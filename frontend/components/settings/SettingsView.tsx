@@ -21,10 +21,10 @@ export function SettingsView({
         <article>
           <h3>Form details</h3>
           <p className="hint">Shown on the welcome screen and on your workspace cards.</p>
-          <label>
+          <label className="stack">
             Description
-            <input
-              type="text"
+            <textarea
+              rows={5}
               value={form.description || ""}
               onChange={(event) => onChange({ description: event.target.value })}
               placeholder="A few questions. Honest answers."

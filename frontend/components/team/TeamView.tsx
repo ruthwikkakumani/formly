@@ -3,13 +3,17 @@
 import { FormEvent, useEffect, useState } from "react";
 
 import { Toast } from "@/components/shared/Toast";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useToast } from "@/hooks/useToast";
+import { isOwner } from "@/lib/access";
 import { teamApi } from "@/lib/api";
 import { MESSAGES, messageFromUnknown } from "@/lib/errors";
 import { MemberRole, WorkspaceInvite, WorkspaceMember } from "@/lib/types";
 import { isValidEmail } from "@/lib/validation";
 
-export function TeamView() {
+export function TeamView({ embedded = false }: { embedded?: boolean }) {
+  const { current, ready } = useCurrentUser();
+  const owner = isOwner(current);
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [invites, setInvites] = useState<WorkspaceInvite[]>([]);
   const [name, setName] = useState("");
@@ -23,10 +27,15 @@ export function TeamView() {
 
   async function load() {
     try {
-      const [nextMembers, nextInvites] = await Promise.all([teamApi.list(), teamApi.invites()]);
+      const nextMembers = await teamApi.list();
       setMembers(nextMembers);
-      setInvites(nextInvites);
-      return nextInvites;
+      if (isOwner(current)) {
+        const nextInvites = await teamApi.invites();
+        setInvites(nextInvites);
+        return nextInvites;
+      }
+      setInvites([]);
+      return [] as WorkspaceInvite[];
     } catch (error) {
       showToast(messageFromUnknown(error, MESSAGES.teamLoadFailed), "error");
       return [] as WorkspaceInvite[];
@@ -34,11 +43,13 @@ export function TeamView() {
   }
 
   useEffect(() => {
+    if (!ready) return;
     void load();
-  }, []);
+  }, [ready, current?.role]);
 
   async function invite(event: FormEvent) {
     event.preventDefault();
+    if (!owner) return;
     const trimmedName = name.trim();
     const trimmedEmail = email.trim();
     if (!trimmedName) {
@@ -99,48 +110,57 @@ export function TeamView() {
 
   return (
     <section className="team">
-      <p className="eyebrow">WORKSPACE</p>
-      <h1>Collaboration & sharing</h1>
+      {!embedded ? (
+        <>
+          <p className="eyebrow">WORKSPACE</p>
+          <h1>Collaboration & sharing</h1>
+        </>
+      ) : (
+        <h2>Workspace team</h2>
+      )}
       <p className="lede">
-        Send an email invite. They are not added until they open the link and accept. Ignore or revoke means they stay
-        out of the workspace.
+        {owner
+          ? "Send an email invite. They are not added until they open the link and accept. Ignore or revoke means they stay out of the workspace."
+          : "Everyone in this workspace can edit forms. Only the owner can invite or remove teammates."}
       </p>
-      <form className="invite" noValidate onSubmit={(event) => void invite(event)}>
-        <input
-          required
-          placeholder="Name"
-          value={name}
-          onChange={(event) => {
-            setName(event.target.value);
-            if (formError) setFormError("");
-          }}
-        />
-        <input
-          required
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          placeholder="Email"
-          value={email}
-          onChange={(event) => {
-            setEmail(event.target.value);
-            if (formError) setFormError("");
-          }}
-        />
-        <select value={role} onChange={(event) => setRole(event.target.value as MemberRole)}>
-          <option value="editor">Editor</option>
-          <option value="viewer">Viewer</option>
-        </select>
-        <button className="primary" type="submit" disabled={sending}>
-          {sending ? "Sending…" : "Send invite"}
-        </button>
-        {formError ? (
-          <p className="autherr" role="alert">
-            {formError}
-          </p>
-        ) : null}
-      </form>
-      {shareLink ? (
+      {owner ? (
+        <form className="invite" noValidate onSubmit={(event) => void invite(event)}>
+          <input
+            required
+            placeholder="Name"
+            value={name}
+            onChange={(event) => {
+              setName(event.target.value);
+              if (formError) setFormError("");
+            }}
+          />
+          <input
+            required
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            placeholder="Email"
+            value={email}
+            onChange={(event) => {
+              setEmail(event.target.value);
+              if (formError) setFormError("");
+            }}
+          />
+          <select value={role} onChange={(event) => setRole(event.target.value as MemberRole)}>
+            <option value="editor">Editor</option>
+            <option value="viewer">Viewer</option>
+          </select>
+          <button className="primary" type="submit" disabled={sending}>
+            {sending ? "Sending…" : "Send invite"}
+          </button>
+          {formError ? (
+            <p className="autherr" role="alert">
+              {formError}
+            </p>
+          ) : null}
+        </form>
+      ) : null}
+      {owner && shareLink ? (
         <div className="invite-share" role="status">
           <p>Invite created. Copy the invite link to share it.</p>
           <div className="invite-share-row">
@@ -151,7 +171,7 @@ export function TeamView() {
           </div>
         </div>
       ) : null}
-      {invites.length ? (
+      {owner && invites.length ? (
         <div className="memberlist">
           <p className="eyebrow">PENDING INVITES</p>
           {invites.map((inviteRow) => (
@@ -159,7 +179,7 @@ export function TeamView() {
               <div>
                 <b>{inviteRow.name}</b>
                 <p>
-                  {inviteRow.email} · waiting to accept
+                  {inviteRow.email} · {inviteRow.role} · waiting to accept
                 </p>
                 {inviteRow.email_error ? (
                   <p className="invite-email-error" role="status">
@@ -200,7 +220,7 @@ export function TeamView() {
               <p>{member.email}</p>
             </div>
             <span className="status">{member.role}</span>
-            {member.role !== "owner" && (
+            {owner && member.role !== "owner" && (
               <button
                 className="danger"
                 onClick={async () => {

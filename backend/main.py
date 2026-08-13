@@ -11,7 +11,7 @@ from app.api.router import api_router
 from app.core.config import settings
 from app.db.base import Base
 from app.db.session import SessionLocal, engine
-from app.models import Answer, Form, FormActivity, FormPresence, Member, PartialResponse, Question, Response, WorkspaceInvite  # noqa: F401
+from app.models import Answer, Form, FormActivity, FormPresence, Member, PartialResponse, PasswordReset, Question, Response, WorkspaceInvite  # noqa: F401
 from app.services.seed import seed_database
 
 
