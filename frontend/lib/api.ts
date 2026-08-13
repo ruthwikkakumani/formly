@@ -1,6 +1,15 @@
 import { authHeaders, getToken } from "./auth";
 import { contextFromPath, messageFromDetail, messageFromNetworkError, messageFromStatus, MESSAGES } from "./errors";
-import { FormActivity, FormDefinition, FormEditor, FormResponse, FormStats, WorkspaceInvite, WorkspaceMember } from "./types";
+import {
+  FormActivity,
+  FormDefinition,
+  FormEditor,
+  FormResponse,
+  FormStats,
+  InviteCreateResult,
+  WorkspaceInvite,
+  WorkspaceMember,
+} from "./types";
 
 declare global {
   interface Window {
@@ -97,7 +106,7 @@ export const teamApi = {
   list: () => request<WorkspaceMember[]>("/workspace/members"),
   invites: () => request<WorkspaceInvite[]>("/workspace/invites"),
   invite: (body: { name: string; email: string; role: string }) =>
-    request<WorkspaceInvite>("/workspace/invites", json("POST", body)),
+    request<InviteCreateResult>("/workspace/invites", json("POST", body)),
   revokeInvite: (id: number) => request<{ ok: boolean }>(`/workspace/invites/${id}`, { method: "DELETE" }),
   remove: (id: number) => request<{ ok: boolean }>(`/workspace/members/${id}`, { method: "DELETE" }),
 };

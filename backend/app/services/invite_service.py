@@ -1,3 +1,4 @@
+import sys
 from datetime import datetime
 from uuid import uuid4
 
@@ -61,13 +62,29 @@ class InviteService:
         db.flush()
         accept_url = f"{settings.frontend_url.rstrip('/')}/invite/{invite.token}"
         try:
-            send_invite_email(email, invite.name, invite.role, accept_url)
-        except HTTPException:
+            db.commit()
+            db.refresh(invite)
+        except Exception as error:
             db.rollback()
-            raise
-        db.commit()
-        db.refresh(invite)
-        return self.serialize(invite)
+            print(f"Workspace invite persist failed: {error!r}", file=sys.stderr, flush=True)
+            raise HTTPException(
+                status_code=502,
+                detail="We couldn't create that invite. Please try again.",
+            ) from error
+
+        sent, email_error = send_invite_email(email, invite.name, invite.role, accept_url)
+        if sent:
+            message = "Invite email sent. They join only after accepting the link."
+        elif email_error:
+            message = f"{email_error.rstrip('.')} Copy the invite link and share it."
+        else:
+            message = "Invite created, but the email could not be sent. Copy the invite link and share it."
+        return {
+            "invite": self.serialize(invite),
+            "email_sent": sent,
+            "accept_url": accept_url,
+            "message": message,
+        }
 
     def preview(self, db: Session, token: str) -> dict:
         invite = self._require_open(db, token)

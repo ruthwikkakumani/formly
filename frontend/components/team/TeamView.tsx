@@ -17,6 +17,8 @@ export function TeamView() {
   const [role, setRole] = useState<MemberRole>("editor");
   const [sending, setSending] = useState(false);
   const [formError, setFormError] = useState("");
+  const [shareLink, setShareLink] = useState("");
+  const [copied, setCopied] = useState(false);
   const { toast, showToast } = useToast();
 
   async function load() {
@@ -48,15 +50,37 @@ export function TeamView() {
     setFormError("");
     setSending(true);
     try {
-      await teamApi.invite({ name: trimmedName, email: trimmedEmail, role });
+      const result = await teamApi.invite({ name: trimmedName, email: trimmedEmail, role });
       setName("");
       setEmail("");
-      showToast("Invite email sent. They join only after accepting the link.");
+      if (result.email_sent) {
+        setShareLink("");
+        setCopied(false);
+        showToast(result.message || "Invite email sent. They join only after accepting the link.");
+      } else {
+        setShareLink(result.accept_url);
+        setCopied(false);
+        showToast(
+          result.message || "Invite created, but the email could not be sent. Copy the invite link and share it.",
+          "error",
+        );
+      }
       await load();
     } catch (error) {
       showToast(messageFromUnknown(error, MESSAGES.inviteSendFailed), "error");
     } finally {
       setSending(false);
+    }
+  }
+
+  async function copyShareLink() {
+    if (!shareLink) return;
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      showToast(MESSAGES.copyFailed, "error");
     }
   }
 
@@ -103,6 +127,17 @@ export function TeamView() {
           </p>
         ) : null}
       </form>
+      {shareLink ? (
+        <div className="invite-share" role="status">
+          <p>The invite was created, but the email could not be sent. Copy the link and share it directly.</p>
+          <div className="invite-share-row">
+            <input readOnly value={shareLink} aria-label="Invite link" onFocus={(event) => event.target.select()} />
+            <button type="button" className="primary" onClick={() => void copyShareLink()}>
+              {copied ? "Copied" : "Copy invite link"}
+            </button>
+          </div>
+        </div>
+      ) : null}
       {invites.length ? (
         <div className="memberlist">
           <p className="eyebrow">PENDING INVITES</p>

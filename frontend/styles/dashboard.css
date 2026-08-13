@@ -157,6 +157,34 @@
   grid-column: 1 / -1;
 }
 
+.invite-share {
+  margin: -8px 0 28px;
+  padding: 14px 16px;
+  border: 1px solid #e8d2a8;
+  background: #fff8eb;
+  border-radius: 12px;
+}
+
+.invite-share p {
+  margin: 0 0 10px;
+  color: #6a4b12;
+  font-size: 14px;
+}
+
+.invite-share-row {
+  display: flex;
+  gap: 8px;
+}
+
+.invite-share-row input {
+  flex: 1;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 11px 12px;
+  background: #fff;
+  color: #191919;
+}
+
 .memberlist article {
   display: flex;
   align-items: center;
@@ -417,6 +445,10 @@
 
   .invite {
     grid-template-columns: 1fr;
+  }
+
+  .invite-share-row {
+    flex-direction: column;
   }
 }
 

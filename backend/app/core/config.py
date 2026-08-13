@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @field_validator(
+        "database_url",
         "frontend_url",
         "cors_origins",
         "smtp_host",
@@ -64,6 +65,16 @@ class Settings(BaseSettings):
     @classmethod
     def strip_env_quotes(cls, value: object) -> object:
         return unquote(value) if isinstance(value, str) else value
+
+    @field_validator("smtp_port", mode="before")
+    @classmethod
+    def unquote_smtp_port(cls, value: object) -> object:
+        if isinstance(value, str):
+            cleaned = unquote(value)
+            if cleaned.isdigit():
+                return int(cleaned)
+            return cleaned
+        return value
 
     @property
     def cors_origin_list(self) -> list[str]:

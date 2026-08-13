@@ -100,6 +100,13 @@ export interface WorkspaceInvite {
   expires_at?: string;
 }
 
+export interface InviteCreateResult {
+  invite: WorkspaceInvite;
+  email_sent: boolean;
+  accept_url: string;
+  message: string;
+}
+
 export interface FormEditor {
   name: string;
   email: string;
