@@ -23,6 +23,7 @@ export function BuilderView({ id }: { id: string }) {
   }
   if (!builder.form) return <div className="loader">Loading your form…</div>;
   const question = builder.form.questions[builder.selected];
+  const readOnly = builder.readOnly;
 
   return (
     <main className="builder">
@@ -32,6 +33,7 @@ export function BuilderView({ id }: { id: string }) {
         editors={builder.editors}
         current={builder.current}
         dirty={builder.dirty}
+        readOnly={readOnly}
         onTab={builder.setTab}
         onTitle={(title) => builder.change({ title })}
         onSave={() => void builder.save()}
@@ -44,23 +46,28 @@ export function BuilderView({ id }: { id: string }) {
             <QuestionList
               questions={builder.form.questions}
               selected={builder.selected}
+              readOnly={readOnly}
               onSelect={builder.setSelected}
               onReorder={builder.reorder}
               onAdd={() => builder.addQuestion()}
             />
-            <QuestionTypePicker onAdd={builder.addQuestion} />
+            {readOnly ? null : <QuestionTypePicker onAdd={builder.addQuestion} />}
           </div>
           <BuilderCanvas
             question={question}
             index={builder.selected}
             total={builder.form.questions.length}
             accent={builder.form.theme.accent}
+            thankYou={builder.form.theme.thankYou}
+            readOnly={readOnly}
             onChange={builder.changeQuestion}
+            onSelect={builder.setSelected}
           />
           <QuestionEditor
             question={question}
             questions={builder.form.questions}
             selected={builder.selected}
+            readOnly={readOnly}
             onChange={builder.changeQuestion}
             onReorder={builder.reorder}
             onRemove={builder.removeQuestion}
@@ -70,7 +77,12 @@ export function BuilderView({ id }: { id: string }) {
       {builder.tab === "Results" && <ResultsView id={id} questions={builder.form.questions} />}
       {builder.tab === "Settings" && (
         <>
-          <SettingsView form={builder.form} onChange={builder.change} onSave={() => void builder.save()} />
+          <SettingsView
+            form={builder.form}
+            readOnly={readOnly}
+            onChange={builder.change}
+            onSave={() => void builder.save()}
+          />
           <ActivityLog events={builder.activity} />
         </>
       )}

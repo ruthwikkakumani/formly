@@ -3,10 +3,12 @@ import { FormDefinition } from "@/lib/types";
 
 export function SettingsView({
   form,
+  readOnly = false,
   onChange,
   onSave,
 }: {
   form: FormDefinition;
+  readOnly?: boolean;
   onChange: (patch: Partial<FormDefinition>) => void;
   onSave: () => void;
 }) {
@@ -16,8 +18,12 @@ export function SettingsView({
   return (
     <section className="settings">
       <h2>Settings</h2>
-      <p>Theme, thank-you screen, and integrations for this form.</p>
-      <div className="settingsgrid">
+      <p>
+        {readOnly
+          ? "View only — ask the owner to make you an editor to change this form."
+          : "Theme, thank-you screen, and integrations for this form."}
+      </p>
+      <fieldset className="settingsgrid" disabled={readOnly}>
         <article>
           <h3>Form details</h3>
           <p className="hint">Shown on the welcome screen and on your workspace cards.</p>
@@ -88,7 +94,7 @@ export function SettingsView({
             Save webhook
           </button>
         </article>
-      </div>
+      </fieldset>
     </section>
   );
 }

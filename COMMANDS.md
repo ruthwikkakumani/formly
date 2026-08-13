@@ -29,20 +29,23 @@ npm run dev
 ```
 
 App: http://localhost:3000  
+Login (reviewer demo): http://localhost:3000/login — `reviewer@formly.dev` / `FormlyReview1` (editor: can edit forms, cannot invite/remove; override via `REVIEWER_*` and `NEXT_PUBLIC_REVIEWER_*`)  
 Register (first owner): http://localhost:3000/register  
+Forgot password: http://localhost:3000/forgot-password  
 Public form (no login): http://localhost:3000/f/product-feedback  
-Team: http://localhost:3000/team  
-Templates: dashboard **Templates** tab (starter kits; creates a draft form)
+Workspace / team: http://localhost:3000/team  
+Settings (account + team): http://localhost:3000/settings  
+Templates: dashboard **Templates** tab (6 starter kits; creates a draft form)
 
-Later teammates cannot register themselves — invite them from `/team` (email + copy link).
+Later teammates cannot register themselves — the owner invites them from `/team` or `/settings` (email + copy link). Invited `editor` / `viewer` accounts can still save and publish forms. Only the owner can invite or remove teammates. The seeded reviewer is an `editor` and can save/publish.
 
-Live collab demo: sign in as two different accounts (two browsers), open the same form. You will see the other editor. Save in one — the other reloads the saved form if their canvas is clean. This is not Google Docs live typing. Closing the builder clears presence.
+Live collab demo: sign in as two different accounts (two browsers), open the same form. You will see the other editor. Save in one — the other reloads the saved form if their canvas is clean. This is not Google Docs live typing (no OT/CRDT). Closing or leaving the builder clears presence.
 
 ## 3. Seeded data (first API start)
 
 - Published: Product feedback, Remote work pulse
 - Draft: New customer interview
-- No fake members. Create the owner at `/register`, then invite teammates.
+- Reviewer member (if missing): `reviewer@formly.dev` / `FormlyReview1`, role `editor` — for assignment graders. Not the owner. Create the owner at `/register`, then invite other teammates.
 
 If you need a clean seed:
 
@@ -63,12 +66,28 @@ git push -u origin master
 
 ## 5. Docker images
 
+Multi-arch (`linux/amd64` + `linux/arm64`) via buildx builder `multi-builder`. Tag both `latest` and `1.0`. Frontend bakes `NEXT_PUBLIC_API_URL` at build time; the container entrypoint also writes `/runtime-config.js` from the same env var at start.
+
 ```bash
-docker buildx build --platform linux/amd64,linux/arm64 -t ruthwikkakumani/formly-backend:latest --push ./backend
-docker buildx build --platform linux/amd64,linux/arm64 -t ruthwikkakumani/formly-frontend:latest --push ./frontend
+docker buildx inspect multi-builder >/dev/null 2>&1 || docker buildx create --name multi-builder --use --bootstrap
+
+docker buildx build --builder multi-builder --platform linux/amd64,linux/arm64 \
+  -t ruthwikkakumani/formly-backend:latest \
+  -t ruthwikkakumani/formly-backend:1.0 \
+  --push ./backend
+
+docker buildx build --builder multi-builder --platform linux/amd64,linux/arm64 \
+  -t ruthwikkakumani/formly-frontend:latest \
+  -t ruthwikkakumani/formly-frontend:1.0 \
+  --build-arg NEXT_PUBLIC_API_URL=https://formly-api.rdrt.dev/api \
+  --build-arg NEXT_PUBLIC_REVIEWER_EMAIL=reviewer@formly.dev \
+  --build-arg NEXT_PUBLIC_REVIEWER_PASSWORD=FormlyReview1 \
+  --push ./frontend
 ```
 
-The images do **not** contain a database file. On boot the API creates `/data/typeform.db` and tables, then seeds forms.
+Requires `docker login` to Docker Hub. The images do **not** contain a database file. On boot the API creates `/data/typeform.db` and tables, then seeds forms plus the reviewer editor if missing.
+
+Railway does not auto-pull new tags unless you add Watchtower. After a push, **Redeploy** the frontend and backend services in Railway.
 
 Local:
 
@@ -97,11 +116,13 @@ SMTP_PORT=587
 SMTP_USER=you@gmail.com
 SMTP_PASSWORD=your-16-char-app-password
 SMTP_FROM=you@gmail.com
+REVIEWER_EMAIL=reviewer@formly.dev
+REVIEWER_PASSWORD=FormlyReview1
 ```
 
 `DATABASE_URL` needs **four** slashes (`sqlite:////data/...`) so SQLite opens the absolute path `/data/typeform.db`. Gmail app password must have no spaces. `SMTP_FROM` can be omitted (defaults to `SMTP_USER`). Invite emails are a branded HTML table (Gmail-safe) plus a plaintext fallback.
 
-Railway often blocks outbound SMTP to Gmail (ports 587/465). When that happens the invite is still created — use **Copy invite link** on the team page. Local SMTP usually works.
+Railway often blocks outbound SMTP to Gmail (ports 587/465). When that happens the invite is still created — use **Copy invite link** on `/team` or `/settings`. Local SMTP usually works. Password reset uses the same SMTP; the token is created even if mail fails. Locally the forgot-password page also shows a copy link.
 
 Or Resend: `RESEND_API_KEY=re_...` and `INVITE_FROM_EMAIL=Formly <onboarding@resend.dev>`.
 
@@ -111,6 +132,8 @@ Custom domain: `formly.rdrt.dev`
 
 ```
 NEXT_PUBLIC_API_URL=https://formly-api.rdrt.dev/api
+NEXT_PUBLIC_REVIEWER_EMAIL=reviewer@formly.dev
+NEXT_PUBLIC_REVIEWER_PASSWORD=FormlyReview1
 ```
 
 Cloudflare: CNAME `formly` and `formly-api` to the Railway `*.up.railway.app` hosts, plus each `_railway-verify.*` TXT. SSL mode **Full**.
@@ -118,4 +141,4 @@ Cloudflare: CNAME `formly` and `formly-api` to the Railway `*.up.railway.app` ho
 ## 7. What to submit
 
 - GitHub: https://github.com/ruthwikkakumani/formly
-- Demo: https://formly.rdrt.dev (open `/f/product-feedback` with no login; `/register` to create the owner)
+- Demo: https://formly.rdrt.dev (open `/f/product-feedback` with no login; `/login` as `reviewer@formly.dev` / `FormlyReview1`; `/register` to create the owner)

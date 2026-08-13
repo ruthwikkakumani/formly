@@ -14,8 +14,8 @@ from app.services.email_service import schedule_invite_email
 
 
 class InviteService:
-    def serialize(self, invite: WorkspaceInvite) -> dict:
-        return {
+    def serialize(self, invite: WorkspaceInvite, include_accept_url: bool = True) -> dict:
+        data = {
             "id": invite.id,
             "email": invite.email,
             "name": invite.name,
@@ -23,11 +23,13 @@ class InviteService:
             "status": invite.status,
             "created_at": invite.created_at,
             "expires_at": invite.expires_at,
-            "accept_url": f"{settings.frontend_url.rstrip('/')}/invite/{invite.token}",
             "email_error": invite.email_error,
         }
+        if include_accept_url:
+            data["accept_url"] = f"{settings.frontend_url.rstrip('/')}/invite/{invite.token}"
+        return data
 
-    def list_pending(self, db: Session) -> list[dict]:
+    def list_pending(self, db: Session, include_accept_url: bool = True) -> list[dict]:
         self._expire_stale(db)
         invites = (
             db.query(WorkspaceInvite)
@@ -35,7 +37,7 @@ class InviteService:
             .order_by(WorkspaceInvite.created_at.desc())
             .all()
         )
-        return [self.serialize(invite) for invite in invites]
+        return [self.serialize(invite, include_accept_url=include_accept_url) for invite in invites]
 
     def create(self, db: Session, payload: MemberPayload) -> dict:
         self._expire_stale(db)

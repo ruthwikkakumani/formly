@@ -18,7 +18,7 @@ sequenceDiagram
   Svc->>DB: INSERT form + question + activity created
   Svc-->>Dash: FormDefinition
   Dash->>Creator: Navigate /builder/{id}
-  Creator->>Dash: Edit canvas, drag reorder, Save
+  Creator->>Dash: Edit canvas, drag over to open gap, Save
   Dash->>API: PUT /forms/{id}
   API->>Svc: update() + sync questions by id
   Svc->>DB: UPDATE questions + stamp updated_by + activity saved
@@ -123,19 +123,23 @@ sequenceDiagram
 sequenceDiagram
   actor Creator
   participant Results as ResultsView
+  participant Insight as QuestionInsight
+  participant Table as ResponseTable
   participant API as formsApi
 
   Creator->>Results: Open Results tab
   Results->>API: GET /forms/{id}/responses
   Results->>API: GET /forms/{id}/stats
-  API-->>Results: rows + choice counts + completion %
-  Creator->>Results: Click a row
-  Results->>Creator: Response detail modal
+  API-->>Results: rows + per-question counts + completion %
+  Results->>Insight: bar / segment / rating cards
+  Results->>Table: wrapping headers + sticky Submitted
+  Creator->>Table: Click a row
+  Table->>Creator: Response detail modal
   Creator->>Results: Export CSV
   Results->>API: GET /forms/{id}/responses.csv
 ```
 
-## 5. Invite teammate (email + copy link)
+## 5. Invite teammate (owner only; email + copy link)
 
 ```mermaid
 sequenceDiagram
@@ -146,7 +150,9 @@ sequenceDiagram
   participant Mail as email_service
   participant Accept as /invite/{token}
 
-  Owner->>Team: Name, email, role → Send invite
+  Note over Owner,Team: require_owner — editor/viewer cannot invite or change roles
+  Owner->>Team: Name, email, editor or viewer → Send invite
+  Note over Owner,Team: Owner can later PATCH role viewer ↔ editor
   Team->>API: POST invite
   API-->>Team: accept_url immediately
   Team-->>Owner: Copy invite link
@@ -158,5 +164,52 @@ sequenceDiagram
     Mail-->>Invitee: branded HTML + plaintext
   end
   Invitee->>Accept: Open link, set password
-  Accept-->>Invitee: JWT — now a member
+  Accept-->>Invitee: JWT — now a member (editor can edit; viewer is read-only)
+```
+
+## 6. Forgot password + reset
+
+```mermaid
+sequenceDiagram
+  actor User
+  participant Page as /forgot-password
+  participant API as /api/auth
+  participant Mail as email_service
+  participant Reset as /reset/token
+
+  User->>Page: Enter email
+  Page->>API: POST /forgot-password
+  API-->>Page: generic ok message
+  alt local FRONTEND_URL
+    API-->>Page: reset_url for copy link
+  end
+  API--)Mail: SMTP in background
+  alt Railway blocks 587/465
+    Note over Mail: token still created
+  else SMTP ok
+    Mail-->>User: reset email
+  end
+  User->>Reset: Open /reset/token
+  Reset->>API: GET /reset-password/token
+  User->>Reset: New password
+  Reset->>API: POST /reset-password/token
+  API-->>User: JWT session
+```
+
+## 7. Reviewer demo login
+
+```mermaid
+sequenceDiagram
+  actor Grader
+  participant Login as /login
+  participant API as POST /auth/login
+  participant DB as SQLite
+
+  Note over DB: seed_reviewer_if_missing on boot
+  Grader->>Login: See reviewer@formly.dev and FormlyReview1
+  Grader->>Login: Use these credentials
+  Login->>API: email + password
+  API->>DB: lookup editor member
+  API-->>Login: JWT
+  Login-->>Grader: Workspace home
 ```

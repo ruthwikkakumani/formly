@@ -27,6 +27,18 @@ class MemberPayload(BaseModel):
         return email
 
 
+class RoleUpdatePayload(BaseModel):
+    role: str
+
+    @field_validator("role")
+    @classmethod
+    def require_assignable_role(cls, value: str) -> str:
+        role = value.strip().lower()
+        if role not in {"editor", "viewer"}:
+            raise ValueError("Role must be editor or viewer.")
+        return role
+
+
 class MemberRead(BaseModel):
     id: int
     name: str

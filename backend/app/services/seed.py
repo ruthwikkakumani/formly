@@ -1,10 +1,31 @@
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.constants import THEME_DEFAULTS
-from app.models import Answer, Form, Question, Response
+from app.core.security import hash_password
+from app.models import Answer, Form, Member, Question, Response
+
+
+def seed_reviewer_if_missing(db: Session) -> None:
+    email = (settings.reviewer_email or "").strip().lower()
+    password = settings.reviewer_password or ""
+    if not email or len(password) < 8:
+        return
+    if db.query(Member).filter(Member.email == email).first():
+        return
+    db.add(
+        Member(
+            name="Reviewer",
+            email=email,
+            role="editor",
+            password_hash=hash_password(password),
+        )
+    )
+    db.commit()
 
 
 def seed_database(db: Session) -> None:
+    seed_reviewer_if_missing(db)
     if db.query(Form).first():
         return
 

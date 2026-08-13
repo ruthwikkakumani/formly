@@ -1,5 +1,12 @@
 import { authHeaders, getToken } from "./auth";
-import { contextFromPath, messageFromDetail, messageFromNetworkError, messageFromStatus, MESSAGES } from "./errors";
+import {
+  ApiError,
+  contextFromPath,
+  messageFromDetail,
+  messageFromNetworkError,
+  messageFromStatus,
+  MESSAGES,
+} from "./errors";
 import {
   FormActivity,
   FormDefinition,
@@ -12,8 +19,13 @@ import {
 } from "./types";
 
 const REQUEST_TIMEOUT_MS = 8_000;
+const AUTH_TIMEOUT_MS = 15_000;
 
-async function timedFetch(input: string, init?: RequestInit): Promise<Response> {
+function timeoutFor(path: string): number {
+  return path.startsWith("/auth/") ? AUTH_TIMEOUT_MS : REQUEST_TIMEOUT_MS;
+}
+
+async function timedFetch(input: string, init?: RequestInit, timeoutMs = REQUEST_TIMEOUT_MS): Promise<Response> {
   const controller = new AbortController();
   const external = init?.signal;
   if (external) {
@@ -24,11 +36,11 @@ async function timedFetch(input: string, init?: RequestInit): Promise<Response> 
   const timer = setTimeout(() => {
     timedOut = true;
     controller.abort();
-  }, REQUEST_TIMEOUT_MS);
+  }, timeoutMs);
   try {
     return await fetch(input, { ...init, signal: controller.signal });
   } catch (error) {
-    if (timedOut) throw new Error(MESSAGES.timeout);
+    if (timedOut) throw new ApiError(MESSAGES.timeout, "timeout");
     throw error;
   } finally {
     clearTimeout(timer);
@@ -52,29 +64,21 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
   const token = getToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
+  const context = contextFromPath(path);
   let response: Response;
   try {
-    response = await timedFetch(`${apiBase()}${path}`, { ...init, headers });
+    response = await timedFetch(`${apiBase()}${path}`, { ...init, headers }, timeoutFor(path));
   } catch (error) {
-    if (error instanceof Error && error.message === MESSAGES.timeout) throw error;
-    throw new Error(messageFromNetworkError(error, contextFromPath(path)));
-  }
-  if (
-    response.status === 401 &&
-    typeof window !== "undefined" &&
-    !path.startsWith("/auth/") &&
-    !path.startsWith("/public/") &&
-    !path.startsWith("/invites/")
-  ) {
-    window.localStorage.removeItem("formly-token");
-    const route = window.location.pathname;
-    if (!["/login", "/register", "/invite", "/f/"].some((prefix) => route.startsWith(prefix))) {
-      window.location.href = "/login";
-    }
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(messageFromNetworkError(error, context), "network");
   }
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(messageFromStatus(response.status, messageFromDetail(payload.detail), contextFromPath(path)));
+    throw new ApiError(
+      messageFromStatus(response.status, messageFromDetail(payload.detail), context),
+      "http",
+      response.status,
+    );
   }
   if (response.status === 204) return undefined as T;
   return response.json();
@@ -106,13 +110,15 @@ export const formsApi = {
     try {
       response = await timedFetch(`${apiBase()}/forms/${id}/responses.csv`, { headers: authHeaders() });
     } catch (error) {
-      if (error instanceof Error && error.message === MESSAGES.timeout) throw error;
-      throw new Error(messageFromNetworkError(error));
+      if (error instanceof ApiError) throw error;
+      throw new ApiError(messageFromNetworkError(error), "network");
     }
     if (!response.ok) {
       const payload = await response.json().catch(() => ({}));
-      throw new Error(
+      throw new ApiError(
         messageFromStatus(response.status, messageFromDetail(payload.detail), "form") || MESSAGES.exportFailed,
+        "http",
+        response.status,
       );
     }
     const blob = await response.blob();
@@ -141,6 +147,8 @@ export const teamApi = {
     request<InviteCreateResult>("/workspace/invites", json("POST", body)),
   revokeInvite: (id: number) => request<{ ok: boolean }>(`/workspace/invites/${id}`, { method: "DELETE" }),
   remove: (id: number) => request<{ ok: boolean }>(`/workspace/members/${id}`, { method: "DELETE" }),
+  updateRole: (id: number, role: "editor" | "viewer") =>
+    request<WorkspaceMember>(`/workspace/members/${id}`, json("PATCH", { role })),
 };
 
 export const inviteApi = {

@@ -1,3 +1,4 @@
+import { QuestionNav } from "@/components/shared/QuestionNav";
 import { Question } from "@/lib/types";
 import { QuestionInput } from "./QuestionInput";
 
@@ -36,16 +37,9 @@ export function QuestionScreen({
         <button className="ok" onClick={onNext}>
           OK <kbd>↵</kbd>
         </button>
-        <div className="fillnav">
-          <button type="button" onClick={onBack} aria-label="Previous question">
-            ↑
-          </button>
-          <button type="button" onClick={onNext} aria-label="Next question">
-            ↓
-          </button>
-        </div>
       </div>
       <small>press Enter ↵ or use arrow keys · letters select choices</small>
+      <QuestionNav onPrev={onBack} onNext={onNext} prevDisabled={index === 0} />
     </div>
   );
 }

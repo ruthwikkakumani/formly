@@ -4,7 +4,7 @@
 
 Formly clones Typeform’s workspace, builder, and conversational one-question-at-a-time fill flow. Creators build and publish forms; anyone with the link can respond without logging in.
 
-The repository contains `frontend/` and `backend/` as required by the assignment. Seeded published forms load on first API start. The first person to register at `/register` becomes the workspace owner; later accounts join only by invite. Public fill (`/f/{slug}`) needs no login.
+The repository contains `frontend/` and `backend/` as required by the assignment. Seeded published forms load on first API start. A seeded **assignment reviewer** account (`reviewer@formly.dev` / `FormlyReview1`, role `editor`) is created if missing — not the owner, not a Gmail. The first person to register at `/register` becomes the workspace owner; later accounts join only by invite. Public fill (`/f/{slug}`) needs no login. `/login` shows the reviewer credentials for graders.
 
 ## Tech stack
 
@@ -61,16 +61,16 @@ formly/
 │   └── app/
 │       ├── core/         config, constants
 │       ├── db/           engine, session
-│       ├── models/       Form, Question, Response, Answer, Partial, Member, Invite, Presence, Activity
+│       ├── models/       Form, Question, Response, Answer, Partial, Member, Invite, Presence, Activity, PasswordReset
 │       ├── schemas/      Pydantic DTOs
 │       ├── repositories/ SQL access
 │       ├── services/     rules, auth, invites, email, seed, webhooks, collaboration
 │       └── api/routes/   auth, forms, public, team, invites, health
 └── frontend/
-    ├── app/              /, /login, /register, /invite/[token], /builder/[id], /f/[slug], /team
+    ├── app/              /, /login, /register, /forgot-password, /reset/[token], /invite/[token], /builder/[id], /f/[slug], /team, /settings
     ├── components/       dashboard (incl. templates), builder, results, settings, respondent, team
     ├── hooks/            useForms, useBuilder, useRespondent, useCurrentUser
-    ├── lib/              api, types, validation, templates, errors
+    ├── lib/              api, types, validation, templates, errors, access
     └── styles/           per-surface CSS
 ```
 
@@ -120,43 +120,60 @@ Saving a form updates questions by id so historical answers are kept. Full colum
 - `GET /api/forms/{id}/responses` · `GET /api/forms/{id}/stats` · `GET /api/forms/{id}/responses.csv`
 - `POST/GET/DELETE /api/forms/{id}/presence` · `GET /api/forms/{id}/activity`
 - `GET /api/public/{slug}` · `POST /api/public/{slug}/responses|partial|upload`
-- `POST /api/auth/register` · `POST /api/auth/login` · `GET /api/auth/me`
-- `GET/POST /api/workspace/members` · `DELETE /api/workspace/members/{id}`
-- `GET/POST /api/workspace/invites` · `DELETE /api/workspace/invites/{id}`
+- `POST /api/auth/register` · `POST /api/auth/login` · `GET/PATCH /api/auth/me` · `POST /api/auth/password`
+- `POST /api/auth/forgot-password` · `GET/POST /api/auth/reset-password/{token}`
+- `GET /api/workspace/members` · `DELETE /api/workspace/members/{id}` (remove: owner only)
+- `GET/POST /api/workspace/invites` · `DELETE /api/workspace/invites/{id}` (owner only)
 - `GET /api/invites/{token}` · `POST /api/invites/{token}/accept`
 - `GET /api/health`
 
 ## Features
 
-Builder, CRUD, publish/share, conversational fill (keyboard + progress + validation), results + CSV, themes (colors, fonts, background, dark mode), thank-you copy, logic jumps, file upload, payments, webhooks, workspace collaboration, who-is-editing + save history, starter **templates**, seeded published forms.
+Builder, CRUD, publish/share, conversational fill (keyboard + progress + validation), results + CSV, themes (colors, fonts, background, dark mode), thank-you copy, logic jumps, file upload, payments, webhooks, workspace collaboration, who-is-editing + save history, starter **templates** (6), seeded published forms.
 
-**Auth.** First `/register` creates the owner. After that, new people join only by accepting an invite. Public `/f/{slug}` stays open with no login.
+**Auth.** First `/register` creates the owner (a seeded reviewer editor does not block that). After that, new people join only by accepting an invite. Public `/f/{slug}` stays open with no login. Forgot password is `/forgot-password`; the emailed link opens `/reset/{token}`.
 
-**Invites.** Team page sends an email and always shows a **copy link**. On Railway, Gmail SMTP (ports 587/465) is often blocked, so the email may not arrive — the invite is still created and the copy link works.
+**Reviewer login.** Graders sign in at `/login` with `reviewer@formly.dev` / `FormlyReview1` (shown on the page, with a fill button). Role is `editor`: can save and publish forms; **cannot** invite or remove teammates. Not the owner’s Gmail. Override with `REVIEWER_EMAIL` / `REVIEWER_PASSWORD` (API seed) and `NEXT_PUBLIC_REVIEWER_EMAIL` / `NEXT_PUBLIC_REVIEWER_PASSWORD` (login page).
 
-**Presence.** Other signed-in editors appear in the builder. Leaving the page clears presence. This is not Google Docs live typing: you save, then other open builders poll and reload if their draft is clean.
+**Roles.** Invite labels are `editor` or `viewer`, but both can **save and publish** forms. Only the **owner** can invite or remove teammates.
 
-**Errors.** API and UI messages are situation-specific (auth, invites, publish, network). Hung requests abort after 8 seconds instead of spinning forever.
+**Invites.** Owner sends an email from Workspace (`/team`) or Settings (`/settings`) and always gets a **copy link**. On Railway, Gmail SMTP (ports 587/465) is often blocked, so the email may not arrive — the invite is still created and the copy link works.
+
+**Password reset.** Same SMTP path as invites. The reset token is always created. Locally (`FRONTEND_URL` on localhost) the page also shows a copy link; on Railway the email may not arrive, and the UI still returns a professional message (it does not leak whether the address exists).
+
+**Workspace Settings.** Shell **Settings** opens `/settings`: change account name/password, plus the team list (invite UI for the owner). Form description in the builder Settings tab is a textarea.
+
+**Presence.** Other signed-in members appear in the builder. Leaving the page (unmount / `pagehide`) clears presence. This is not OT/CRDT or Google Docs live typing: you save, then other open builders poll and reload if their draft is clean.
+
+**Builder list.** Questions reorder with `@dnd-kit`. Dragging a row over another **slides neighbors to open a gap**; drop commits the new order; Escape cancels. Overlay follows the pointer; axis is vertical only.
+
+**Results.** Insights view: completion % with a track, then per-question cards (`QuestionInsight`) — horizontal **bar** charts for choices, **segment** bars for yes/no, **rating** columns (1–5) with average, and recent snippets for open text. Below that, a wrapping-header response table with a **sticky Submitted** column, row detail modal, and Export CSV.
+
+**Errors.** API and UI messages are situation-specific (auth, invites, publish, network, SMTP blocked). Hung requests abort after 8 seconds instead of spinning forever.
+
+Public fill has no “Powered by formly” footer.
 
 ## Assignment scope
 
 **Required:** `frontend/` + `backend/`, workspace + builder, publish + shareable public fill, conversational one-question flow, results.
 
-**Beyond the brief:** JWT auth (owner + invite-only teammates), email invites with copy-link fallback, live presence, save history, starter templates, professional errors, and the extra question types / themes / webhooks / logic jumps that make the product feel complete.
+**Beyond the brief:** JWT auth (owner + invite-only teammates), email invites with copy-link fallback, forgot-password reset, workspace Settings, live presence, save history, starter templates, professional errors, and the extra question types / themes / webhooks / logic jumps that make the product feel complete.
 
 ## Assumptions
 
 - Creators sign in with email/password. First register becomes owner; later people join only via invite accept. Public fill links stay open with no login.
+- Assignment reviewers use the seeded `reviewer@formly.dev` / `FormlyReview1` editor shown on `/login` — not a personal Gmail.
+- `editor` and `viewer` are labels only for the invite; both can edit and publish. Only the owner manages the team.
 - Payments record a successful pay action in the response (no live Stripe keys).
 - Webhooks POST JSON on submit; a down endpoint does not fail the response.
 - Team invites send a real email with an accept link when SMTP is reachable. The person is added only after they accept; ignore/revoke leaves them out. Copy link is the reliable fallback.
-- Presence uses heartbeats (not WebSockets). Identity is the signed-in account. Other builders see who is there and pick up **saved** changes — not character-by-character typing.
+- Presence uses heartbeats (not WebSockets, OT, or CRDT). Identity is the signed-in account. Other builders see who is there and pick up **saved** changes — not character-by-character typing.
 
 ## Demo / deployment
 
 Live demo: [https://formly.rdrt.dev](https://formly.rdrt.dev) · API: [https://formly-api.rdrt.dev/docs](https://formly-api.rdrt.dev/docs)
 
-Docker Hub: `ruthwikkakumani/formly-frontend` and `ruthwikkakumani/formly-backend`.
+Docker Hub: `ruthwikkakumani/formly-frontend:{latest,1.0}` and `ruthwikkakumani/formly-backend:{latest,1.0}`. Images do not auto-update on Railway unless you Redeploy (no Watchtower).
 
 1. Railway: two services from those images. Mount a **volume at `/data`** on the backend (SQLite + uploads).
 2. Backend env (no quotes around values):
@@ -168,6 +185,7 @@ Docker Hub: `ruthwikkakumani/formly-frontend` and `ruthwikkakumani/formly-backen
 3. Frontend env: `NEXT_PUBLIC_API_URL=https://formly-api.rdrt.dev/api`
 
 Public fill (no login): `/f/product-feedback`  
+Reviewer sign-in: `/login` → `reviewer@formly.dev` / `FormlyReview1`  
 Create owner: `/register`
 
 Step-by-step: [COMMANDS.md](./COMMANDS.md).

@@ -81,6 +81,15 @@ classDiagram
     +str detail
     +datetime created_at
   }
+  class PasswordReset {
+    +int id
+    +str token
+    +int member_id
+    +str email
+    +datetime created_at
+    +datetime expires_at
+    +datetime used_at
+  }
   Form "1" --> "*" Question : questions
   Form "1" --> "*" Response : responses
   Form "1" --> "*" PartialResponse : partials
@@ -133,11 +142,17 @@ classDiagram
   class AuthService {
     +register(db, payload)
     +login(db, payload)
+    +request_reset(db, payload)
+    +preview_reset(db, token)
+    +reset_password(db, token, payload)
+    +update_profile(db, member, payload)
+    +change_password(db, member, payload)
   }
   class InviteService {
     +create(db, payload)
     +accept(db, token, password)
     +revoke(db, id)
+    +list_pending(db)
   }
   FormService --> FormRepository
   FormService --> CollaborationService
@@ -153,6 +168,13 @@ classDiagram
   class DashboardView
   class TemplatesGallery
   class BuilderView
+  class QuestionList
+  class ResultsView
+  class StatsStrip
+  class QuestionInsight
+  class ResponseTable
+  class SettingsView
+  class AccountSettings
   class PublicFormView
   class TeamView
   class ActivityLog
@@ -163,14 +185,23 @@ classDiagram
   class formsApi
   class publicFormsApi
   class teamApi
+  class authApi
   DashboardView --> useForms
   DashboardView --> TemplatesGallery
   DashboardView --> useCurrentUser
   TemplatesGallery --> useForms
   BuilderView --> useBuilder
+  BuilderView --> QuestionList
+  BuilderView --> ResultsView
+  BuilderView --> SettingsView
   BuilderView --> ActivityLog
+  ResultsView --> StatsStrip
+  StatsStrip --> QuestionInsight
+  ResultsView --> ResponseTable
   PublicFormView --> useRespondent
   TeamView --> teamApi
+  AccountSettings --> authApi
+  AccountSettings --> useCurrentUser
   useForms --> formsApi
   useBuilder --> formsApi
   useBuilder --> useCurrentUser

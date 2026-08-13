@@ -8,6 +8,7 @@ export const MESSAGES = {
   unauthenticated: "Sign in to continue.",
   sessionExpired: "Your session expired. Sign in again.",
   forbidden: "You don't have permission to do that. Ask the workspace owner.",
+  viewOnly: "You have view-only access. Ask the owner to make you an editor.",
   registerExists: "An account with this email already exists. Sign in instead.",
   registerOwnerExists:
     "This workspace already has an owner. Sign in with that account, or ask them to send you an invite.",
@@ -36,7 +37,9 @@ export const MESSAGES = {
   inviteSendFailed: "The invite email could not be sent. Copy the invite link and share it, or try again.",
   inviteRevokeFailed: "We couldn't revoke that invite.",
   memberRemoveFailed: "We couldn't remove that teammate.",
+  roleUpdateFailed: "We couldn't update that teammate's role.",
   copyFailed: "We couldn't copy the link. Please copy it from the address bar instead.",
+  workspaceUnreachable: "We couldn't reach the workspace. Try again.",
   resetUnavailable: "This reset link is no longer valid. Request a new one from the sign-in page.",
   resetFailed: "We couldn't update your password. Please try again.",
   forgotFailed: "We couldn't send a reset email. Please try again.",
@@ -45,6 +48,40 @@ export const MESSAGES = {
   profileSaveFailed: "We couldn't save your account details. Please try again.",
   passwordChangeFailed: "We couldn't update your password. Please try again.",
 } as const;
+
+export type ApiErrorKind = "timeout" | "network" | "http";
+
+export class ApiError extends Error {
+  readonly kind: ApiErrorKind;
+  readonly status?: number;
+
+  constructor(message: string, kind: ApiErrorKind, status?: number) {
+    super(message);
+    this.name = "ApiError";
+    this.kind = kind;
+    this.status = status;
+  }
+}
+
+export function isTimeoutError(error: unknown): boolean {
+  if (error instanceof ApiError && error.kind === "timeout") return true;
+  return rawText(error) === MESSAGES.timeout;
+}
+
+export function isUnauthorizedError(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 401;
+}
+
+export function isNetworkError(error: unknown): boolean {
+  if (error instanceof ApiError && error.kind === "network") return true;
+  const lower = rawText(error).toLowerCase();
+  return lower === MESSAGES.network.toLowerCase() || NETWORK_MARKERS.some((marker) => lower.includes(marker));
+}
+
+export function isTransientError(error: unknown): boolean {
+  if (isTimeoutError(error) || isNetworkError(error)) return true;
+  return error instanceof ApiError && typeof error.status === "number" && error.status >= 500;
+}
 
 const NETWORK_MARKERS = [
   "failed to fetch",
@@ -121,8 +158,13 @@ export function messageFromStatus(status: number, detail: string, context: Error
   const cleaned = sanitizeUserText(detail);
   if (status === 422 && isEmailValidation(detail, cleaned || detail)) return MESSAGES.invalidEmail;
   if (cleaned && !(status === 422 && TECHNICAL_VALIDATION.test(cleaned))) return cleaned;
-  if (status === 401) return context === "login" ? MESSAGES.login : MESSAGES.unauthenticated;
+  if (status === 401) {
+    if (context === "login") return MESSAGES.login;
+    if (context === "reset") return MESSAGES.resetUnavailable;
+    return MESSAGES.unauthenticated;
+  }
   if (status === 403) return context === "register" ? MESSAGES.registerOwnerExists : MESSAGES.forbidden;
+  if (status === 400 && context === "reset") return cleaned || MESSAGES.resetUnavailable;
   if (status === 404) {
     if (context === "invite") return MESSAGES.inviteUnavailable;
     if (context === "form") return MESSAGES.formUnavailable;
@@ -149,6 +191,14 @@ export function messageFromNetworkError(error: unknown, context: ErrorContext = 
 }
 
 export function messageFromUnknown(error: unknown, fallback: string = MESSAGES.generic): string {
+  if (error instanceof ApiError) {
+    if (fallback === MESSAGES.inviteSendFailed && (error.kind === "timeout" || error.kind === "network")) {
+      return fallback;
+    }
+    if (error.kind === "timeout") return MESSAGES.timeout;
+    if (error.kind === "network") return error.message || MESSAGES.network;
+    return sanitizeUserText(error.message) || fallback;
+  }
   const raw = rawText(error);
   const lower = raw.toLowerCase();
   const networkOrTimeout =

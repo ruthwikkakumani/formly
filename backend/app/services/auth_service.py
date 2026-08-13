@@ -35,12 +35,7 @@ class AuthService:
                 status_code=409,
                 detail="An account with this email already exists. Sign in instead.",
             )
-        real_users = (
-            db.query(Member)
-            .filter(Member.password_hash.is_not(None), Member.password_hash != "")
-            .count()
-        )
-        if real_users:
+        if db.query(Member).filter(Member.role == "owner").first():
             raise HTTPException(
                 status_code=403,
                 detail="This workspace already has an owner. Sign in with that account, or ask them to send you an invite.",
@@ -89,7 +84,7 @@ class AuthService:
             result["reset_url"] = reset_url
             result["message"] = (
                 "If that email is in this workspace, we've sent a reset link. "
-                "Email may not send locally — use the reset link below."
+                "If it doesn't arrive, copy the link below."
             )
         return result
 

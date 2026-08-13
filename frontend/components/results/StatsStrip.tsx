@@ -1,18 +1,26 @@
-import { QuestionStat } from "@/lib/types";
+import { FormResponse, Question, QuestionStat } from "@/lib/types";
 
-export function StatsStrip({ stats }: { stats: QuestionStat[] }) {
+import { QuestionInsight } from "./QuestionInsight";
+
+export function StatsStrip({
+  stats,
+  questions,
+  responses,
+}: {
+  stats: QuestionStat[];
+  questions: Question[];
+  responses: FormResponse[];
+}) {
+  if (!stats.length) return null;
   return (
     <div className="stats">
       {stats.map((stat) => (
-        <article key={stat.question_id}>
-          <p>{stat.title}</p>
-          <b>{stat.responses} answers</b>
-          {Object.entries(stat.counts).map(([key, value]) => (
-            <small key={key}>
-              {key}: {value}
-            </small>
-          ))}
-        </article>
+        <QuestionInsight
+          key={stat.question_id}
+          stat={stat}
+          question={questions.find((item) => item.id === stat.question_id)}
+          responses={responses}
+        />
       ))}
     </div>
   );

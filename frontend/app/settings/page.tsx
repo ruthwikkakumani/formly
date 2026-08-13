@@ -1,12 +1,10 @@
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
-import { AccountSettings } from "@/components/settings/AccountSettings";
-import { TeamView } from "@/components/team/TeamView";
+import { SettingsWorkspace } from "@/components/settings/SettingsWorkspace";
 
 export default function SettingsPage() {
   return (
     <WorkspaceShell>
-      <AccountSettings />
-      <TeamView embedded />
+      <SettingsWorkspace />
     </WorkspaceShell>
   );
 }

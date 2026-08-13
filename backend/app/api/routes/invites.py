@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_owner
+from app.api.deps import get_current_user, require_owner
 from app.db.session import get_db
+from app.models import Member
 from app.schemas.auth import AcceptInvitePayload
 from app.schemas.member import MemberPayload
 from app.services.invite_service import InviteService
@@ -12,8 +13,8 @@ service = InviteService()
 
 
 @router.get("/workspace/invites")
-def list_invites(db: Session = Depends(get_db), user: Member = Depends(require_owner)):
-    return service.list_pending(db)
+def list_invites(db: Session = Depends(get_db), user: Member = Depends(get_current_user)):
+    return service.list_pending(db, include_accept_url=user.role == "owner")
 
 
 @router.post("/workspace/invites")

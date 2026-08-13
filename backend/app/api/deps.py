@@ -13,6 +13,7 @@ response_service = ResponseService()
 bearer = HTTPBearer(auto_error=False)
 
 OWNER_DETAIL = "Only the workspace owner can invite or remove teammates."
+VIEW_ONLY_DETAIL = "You have view-only access. Ask the owner to make you an editor."
 
 
 def get_current_user(
@@ -31,4 +32,10 @@ def get_current_user(
 def require_owner(user: Member = Depends(get_current_user)) -> Member:
     if user.role != "owner":
         raise HTTPException(status_code=403, detail=OWNER_DETAIL)
+    return user
+
+
+def require_editor(user: Member = Depends(get_current_user)) -> Member:
+    if user.role == "viewer":
+        raise HTTPException(status_code=403, detail=VIEW_ONLY_DETAIL)
     return user

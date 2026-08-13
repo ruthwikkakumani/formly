@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { isViewer } from "@/lib/access";
 import { formsApi } from "@/lib/api";
 import { createQuestion } from "@/lib/constants";
 import { MESSAGES, messageFromUnknown } from "@/lib/errors";
@@ -19,6 +20,7 @@ export function useBuilder(id: string, initialTab: "Build" | "Results" | "Settin
   const [error, setError] = useState("");
   const { toast, showToast } = useToast();
   const { actor, current } = useCurrentUser();
+  const readOnly = isViewer(current);
   const loadedAt = useRef("");
   const dirtyRef = useRef(false);
   dirtyRef.current = dirty;
@@ -43,7 +45,11 @@ export function useBuilder(id: string, initialTab: "Build" | "Results" | "Settin
       actor_email: email,
     };
     const tick = () => {
-      void formsApi.heartbeat(id, presenceActor).then(setEditors).catch(() => undefined);
+      if (current?.role === "viewer") {
+        void formsApi.editors(id).then(setEditors).catch(() => undefined);
+      } else {
+        void formsApi.heartbeat(id, presenceActor).then(setEditors).catch(() => undefined);
+      }
       void formsApi
         .get(id)
         .then((remote) => {
@@ -72,10 +78,10 @@ export function useBuilder(id: string, initialTab: "Build" | "Results" | "Settin
       window.removeEventListener("pagehide", leave);
       leave();
     };
-  }, [id, current?.email, current?.name, actor.actor_email, actor.actor_name, showToast]);
+  }, [id, current?.email, current?.name, current?.role, actor.actor_email, actor.actor_name, showToast]);
 
   const change = (patch: Partial<FormDefinition>) => {
-    if (!form) return;
+    if (!form || readOnly) return;
     setDirty(true);
     setForm({ ...form, ...patch });
   };
@@ -89,14 +95,14 @@ export function useBuilder(id: string, initialTab: "Build" | "Results" | "Settin
   };
 
   const addQuestion = (type: QuestionType = "short_text") => {
-    if (!form) return;
+    if (!form || readOnly) return;
     const questions = [...form.questions, createQuestion(type)];
     change({ questions });
     setSelected(questions.length - 1);
   };
 
   const reorder = (from: number, to: number) => {
-    if (!form || from === to || to < 0 || to >= form.questions.length) return;
+    if (!form || readOnly || from === to || to < 0 || to >= form.questions.length) return;
     const questions = [...form.questions];
     const [item] = questions.splice(from, 1);
     questions.splice(to, 0, item);
@@ -105,7 +111,7 @@ export function useBuilder(id: string, initialTab: "Build" | "Results" | "Settin
   };
 
   const removeQuestion = () => {
-    if (!form) return;
+    if (!form || readOnly) return;
     if (form.questions.length === 1) {
       showToast("A form needs at least one question");
       return;
@@ -116,6 +122,10 @@ export function useBuilder(id: string, initialTab: "Build" | "Results" | "Settin
 
   async function save() {
     if (!form) return;
+    if (readOnly) {
+      showToast(MESSAGES.viewOnly, "error");
+      return;
+    }
     try {
       const saved = await formsApi.update(id, { ...form, ...actor });
       setForm(saved);
@@ -131,6 +141,10 @@ export function useBuilder(id: string, initialTab: "Build" | "Results" | "Settin
 
   async function publish() {
     if (!form) return;
+    if (readOnly) {
+      showToast(MESSAGES.viewOnly, "error");
+      return;
+    }
     try {
       if (dirtyRef.current) await save();
       const next = await formsApi.togglePublish(id, actor);
@@ -164,6 +178,7 @@ export function useBuilder(id: string, initialTab: "Build" | "Results" | "Settin
     editors,
     activity,
     current,
+    readOnly,
     dirty,
     change,
     changeQuestion,

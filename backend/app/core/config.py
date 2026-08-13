@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     smtp_user: str = ""
     smtp_password: str = ""
     smtp_from: str = ""
+    # Assignment reviewer: created on startup if missing. Not the workspace owner.
+    reviewer_email: str = "reviewer@formly.dev"
+    reviewer_password: str = "FormlyReview1"
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @field_validator(
@@ -60,6 +63,8 @@ class Settings(BaseSettings):
         "auth_secret",
         "resend_api_key",
         "invite_from_email",
+        "reviewer_email",
+        "reviewer_password",
         mode="before",
     )
     @classmethod

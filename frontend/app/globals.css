@@ -108,6 +108,18 @@ a {
   color: var(--muted);
 }
 
+.loader-retry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.loader-retry p {
+  margin: 0;
+  max-width: 420px;
+}
+
 .empty h2 {
   font-family: Fraunces, serif;
   color: var(--ink);

@@ -4,7 +4,7 @@ import io
 from fastapi import APIRouter, Body, Depends, Response
 from sqlalchemy.orm import Session
 
-from app.api.deps import form_service, get_current_user, response_service
+from app.api.deps import form_service, get_current_user, require_editor, response_service
 from app.db.session import get_db
 from app.models import Member
 from app.schemas.form import ActorActionPayload, FormPayload, PresencePayload, RenamePayload
@@ -21,7 +21,7 @@ def list_forms(db: Session = Depends(get_db)):
 
 
 @router.post("")
-def create_form(payload: FormPayload, db: Session = Depends(get_db), user: Member = Depends(get_current_user)):
+def create_form(payload: FormPayload, db: Session = Depends(get_db), user: Member = Depends(require_editor)):
     payload.actor_name = user.name
     payload.actor_email = user.email
     return form_service.serialize(form_service.create(db, payload))
@@ -33,25 +33,25 @@ def get_form(form_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/{form_id}")
-def update_form(form_id: int, payload: FormPayload, db: Session = Depends(get_db), user: Member = Depends(get_current_user)):
+def update_form(form_id: int, payload: FormPayload, db: Session = Depends(get_db), user: Member = Depends(require_editor)):
     payload.actor_name = user.name
     payload.actor_email = user.email
     return form_service.serialize(form_service.update(db, form_id, payload))
 
 
 @router.patch("/{form_id}")
-def rename_form(form_id: int, payload: RenamePayload, db: Session = Depends(get_db), user: Member = Depends(get_current_user)):
+def rename_form(form_id: int, payload: RenamePayload, db: Session = Depends(get_db), user: Member = Depends(require_editor)):
     return form_service.serialize(form_service.rename(db, form_id, payload.title, user.name, user.email))
 
 
 @router.delete("/{form_id}")
-def delete_form(form_id: int, db: Session = Depends(get_db), user: Member = Depends(get_current_user)):
+def delete_form(form_id: int, db: Session = Depends(get_db), user: Member = Depends(require_editor)):
     form_service.delete(db, form_id)
     return {"ok": True}
 
 
 @router.post("/{form_id}/duplicate")
-def duplicate_form(form_id: int, db: Session = Depends(get_db), user: Member = Depends(get_current_user)):
+def duplicate_form(form_id: int, db: Session = Depends(get_db), user: Member = Depends(require_editor)):
     return form_service.serialize(form_service.duplicate(db, form_id))
 
 
@@ -60,7 +60,7 @@ def toggle_publish(
     form_id: int,
     payload: ActorActionPayload = Body(default_factory=ActorActionPayload),
     db: Session = Depends(get_db),
-    user: Member = Depends(get_current_user),
+    user: Member = Depends(require_editor),
 ):
     return form_service.serialize(form_service.toggle_publish(db, form_id, user.name, user.email))
 

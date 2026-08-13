@@ -23,11 +23,15 @@ export function LogicJumpEditor({
 
   return (
     <div className="logic">
-      <b>Logic jumps</b>
-      <p>Branch to another question or the thank-you screen based on the answer. Save first to jump to a newly added question.</p>
+      <div className="logichead">
+        <b>Logic jumps</b>
+        <p>Branch to another question or the thank-you screen. Save first to jump to a newly added question.</p>
+      </div>
       {rules.map((rule, index) => (
         <div className="logicrule" key={index}>
+          <span className="logicif">If</span>
           <select
+            aria-label="If answer is"
             value={rule.option || ""}
             onChange={(event) => {
               const next = [...rules];
@@ -35,14 +39,27 @@ export function LogicJumpEditor({
               setRules(next);
             }}
           >
-            <option value="">If answer is…</option>
+            <option value="">answer is…</option>
             {choiceOptions(question).map((option) => (
               <option value={option} key={option}>
                 {option}
               </option>
             ))}
           </select>
+          <button
+            type="button"
+            className="logicremove"
+            aria-label="Remove jump"
+            onClick={() => setRules(rules.filter((_, ruleIndex) => ruleIndex !== index))}
+          >
+            ×
+          </button>
+          <span className="logicto" aria-hidden="true">
+            →
+          </span>
           <select
+            className="logictarget"
+            aria-label="Jump to"
             value={rule.end ? "end" : rule.target_id || ""}
             onChange={(event) => {
               const next = [...rules];
@@ -63,10 +80,11 @@ export function LogicJumpEditor({
               ) : null,
             )}
           </select>
-          <button onClick={() => setRules(rules.filter((_, ruleIndex) => ruleIndex !== index))}>Remove</button>
         </div>
       ))}
-      <button onClick={() => setRules([...rules, { option: "", target_id: "" }])}>+ Add jump</button>
+      <button type="button" className="logicadd" onClick={() => setRules([...rules, { option: "", target_id: "" }])}>
+        Add jump
+      </button>
     </div>
   );
 }

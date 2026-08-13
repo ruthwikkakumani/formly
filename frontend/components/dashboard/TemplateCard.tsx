@@ -7,11 +7,13 @@ export function TemplateCard({
   template,
   busy,
   creating,
+  canUse = true,
   onUse,
 }: {
   template: FormTemplate;
   busy: boolean;
   creating: boolean;
+  canUse?: boolean;
   onUse: (template: FormTemplate) => void;
 }) {
   const types = [...new Set(template.questions.map((question) => question.type))];
@@ -22,7 +24,7 @@ export function TemplateCard({
 
   return (
     <article className="formcard tmplcard">
-      <button className="tmplhit" type="button" disabled={busy} onClick={() => onUse(template)}>
+      <button className="tmplhit" type="button" disabled={busy || !canUse} onClick={() => onUse(template)}>
         <div className="cardpreview" style={{ background: `${template.accent}14`, color: template.accent }}>
           {template.questions[0]?.title || "Starter questions"}
         </div>
@@ -38,8 +40,8 @@ export function TemplateCard({
       </button>
       <footer>
         <span>{template.questions.length} questions</span>
-        <button type="button" disabled={busy} onClick={() => onUse(template)}>
-          {creating ? "Creating…" : "Use template"}
+        <button type="button" disabled={busy || !canUse} onClick={() => onUse(template)}>
+          {creating ? "Creating…" : canUse ? "Use template" : "View only"}
         </button>
       </footer>
     </article>

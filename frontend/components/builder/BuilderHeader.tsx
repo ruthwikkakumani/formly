@@ -2,12 +2,15 @@ import Link from "next/link";
 
 import { FormDefinition, FormEditor, WorkspaceMember } from "@/lib/types";
 
+const TABS = ["Build", "Results", "Settings"] as const;
+
 export function BuilderHeader({
   form,
   tab,
   editors,
   current,
   dirty,
+  readOnly = false,
   onTab,
   onTitle,
   onSave,
@@ -19,6 +22,7 @@ export function BuilderHeader({
   editors: FormEditor[];
   current?: WorkspaceMember | null;
   dirty: boolean;
+  readOnly?: boolean;
   onTab: (tab: "Build" | "Results" | "Settings") => void;
   onTitle: (title: string) => void;
   onSave: () => void;
@@ -32,41 +36,66 @@ export function BuilderHeader({
 
   return (
     <header className="builderhead">
-      <Link href="/" className="brand">
-        formly<span>•</span>
-      </Link>
-      <input
-        value={form.title}
-        onChange={(event) => onTitle(event.target.value)}
-        className="titleinput"
-        aria-label="Form title"
-      />
-      <div className="presence">
-        {others.length ? (
-          <span className="livepill">{others.map((editor) => editor.name).join(", ")} editing</span>
-        ) : (
-          <span className="livepill quiet">Only you</span>
-        )}
-        <span className="savedby">{dirty ? "Unsaved changes" : `Last saved by ${form.updated_by || "—"}`}</span>
+      <div className="builderid">
+        <Link href="/" className="brand">
+          formly<span>•</span>
+        </Link>
+        <input
+          value={form.title}
+          onChange={(event) => onTitle(event.target.value)}
+          className="titleinput"
+          aria-label="Form title"
+          readOnly={readOnly}
+        />
+        <div className="presence">
+          {others.length ? (
+            <span className="livepill">{others.map((editor) => editor.name).join(", ")} editing</span>
+          ) : (
+            <span className="livepill quiet">Only you</span>
+          )}
+          <span className="savedby">{dirty ? "Unsaved changes" : `Last saved by ${form.updated_by || "—"}`}</span>
+        </div>
       </div>
-      <nav>
-        {(["Build", "Results", "Settings"] as const).map((item) => (
-          <button className={tab === item ? "active" : ""} onClick={() => onTab(item)} key={item}>
+      <nav className="buildertabs" aria-label="Builder sections">
+        {TABS.map((item) => (
+          <button
+            type="button"
+            className={tab === item ? "active" : ""}
+            aria-current={tab === item ? "page" : undefined}
+            onClick={() => onTab(item)}
+            key={item}
+          >
             {item}
           </button>
         ))}
       </nav>
-      <button className="save" onClick={onSave}>
-        Save
-      </button>
-      {form.status === "published" && (
-        <button className="save" onClick={onCopyLink}>
-          Copy link
-        </button>
-      )}
-      <button className="primary" onClick={onPublish}>
-        {form.status === "draft" ? "Publish" : "Unpublish"}
-      </button>
+      <div className="builderactions">
+        {readOnly ? (
+          <span className="livepill viewonly">View only</span>
+        ) : (
+          <button type="button" className={`btnsave${dirty ? " is-dirty" : ""}`} onClick={onSave} disabled={!dirty}>
+            Save
+          </button>
+        )}
+        {form.status === "published" && (
+          <button type="button" className="btncopy" onClick={onCopyLink}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M6.7 9.3 9.3 6.7M7.2 11.4l-.9.9a2.6 2.6 0 1 1-3.6-3.6l.9-.9M8.8 4.6l.9-.9a2.6 2.6 0 1 1 3.6 3.6l-.9.9"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+            Copy link
+          </button>
+        )}
+        {readOnly ? null : (
+          <button type="button" className="primary" onClick={onPublish}>
+            {form.status === "draft" ? "Publish" : "Unpublish"}
+          </button>
+        )}
+      </div>
     </header>
   );
 }

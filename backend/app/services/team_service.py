@@ -29,6 +29,19 @@ class TeamService:
         db.refresh(member)
         return self.serialize(member)
 
+    def update_role(self, db: Session, member_id: int, role: str) -> dict:
+        member = db.query(Member).filter(Member.id == member_id).first()
+        if not member:
+            raise HTTPException(status_code=404, detail="We couldn't find that teammate.")
+        if member.role == "owner":
+            raise HTTPException(status_code=400, detail="The workspace owner's role cannot be changed.")
+        if role not in {"editor", "viewer"}:
+            raise HTTPException(status_code=400, detail="Role must be editor or viewer.")
+        member.role = role
+        db.commit()
+        db.refresh(member)
+        return self.serialize(member)
+
     def remove(self, db: Session, member_id: int) -> None:
         member = db.query(Member).filter(Member.id == member_id).first()
         if not member:

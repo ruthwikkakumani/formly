@@ -67,3 +67,27 @@ stateDiagram-v2
   Dirty --> Conflict: teammate saved while dirty
   Conflict --> Clean: Save or reload
 ```
+
+## Password reset token
+
+```mermaid
+stateDiagram-v2
+  [*] --> Open: POST /forgot-password
+  Open --> Used: POST /reset-password
+  Open --> Expired: after 1 hour
+  Open --> Superseded: newer reset for same member
+  Used --> [*]
+  Expired --> [*]
+  Superseded --> [*]
+```
+
+## Question list drag
+
+```mermaid
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> Dragging: pointer past 6px
+  Dragging --> Dragging: over another row; neighbors slide to open gap
+  Dragging --> Idle: drop commits new order
+  Dragging --> Idle: Escape cancels
+```

@@ -28,7 +28,7 @@ export function ResponseModal({
                 response.answers[question.id]
               )
             ) : (
-              "No answer"
+              "—"
             )}
           </p>
         </div>

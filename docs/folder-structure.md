@@ -20,9 +20,9 @@ formly/
 ├── backend/                       FastAPI + SQLite
 │   ├── main.py                    composition root (CORS, lifespan, seed, mounts)
 │   ├── requirements.txt
-│   ├── Dockerfile                 DATABASE_URL=sqlite:////data/typeform.db
+│   ├── Dockerfile                 DATABASE_URL=sqlite:////data/typeform.db; REVIEWER_* env at runtime
 │   ├── render.yaml
-│   ├── .env.example
+│   ├── .env.example               REVIEWER_EMAIL / REVIEWER_PASSWORD
 │   └── app/
 │       ├── core/                  settings, security, constants
 │       │   ├── config.py
@@ -40,12 +40,13 @@ formly/
 │       │   ├── member.py
 │       │   ├── invite.py
 │       │   ├── presence.py
-│       │   └── activity.py
+│       │   ├── activity.py
+│       │   └── password_reset.py
 │       ├── schemas/               Pydantic request/response contracts
 │       │   ├── form.py
 │       │   ├── question.py
 │       │   ├── submission.py
-│       │   ├── auth.py
+│       │   ├── auth.py            register, login, forgot/reset, profile, password
 │       │   └── member.py
 │       ├── repositories/          SQL only
 │       │   ├── form_repository.py
@@ -60,38 +61,41 @@ formly/
 │       │   ├── invite_service.py
 │       │   ├── email_service.py
 │       │   ├── collaboration_service.py
-│       │   └── seed.py
+│       │   └── seed.py            forms + sample responses + reviewer editor if missing
 │       └── api/
 │           ├── router.py          mounts route modules
 │           ├── deps.py            JWT current user
 │           └── routes/
 │               ├── health.py
-│               ├── auth.py        register / login / me
-│               ├── forms.py       creator CRUD + presence leave (auth required)
+│               ├── auth.py        register / login / me / password / forgot / reset
+│               ├── forms.py       creator CRUD + presence leave (any signed-in member)
 │               ├── public.py      unauthenticated fill + upload
-│               ├── invites.py     send / preview / accept
-│               └── team.py        members
+│               ├── invites.py     send / preview / accept (send/revoke: owner)
+│               └── team.py        members (remove: owner)
 └── frontend/                      Next.js 15 App Router
     ├── app/
-    │   ├── layout.tsx             fonts + global CSS
+    │   ├── layout.tsx             fonts + global CSS + runtime-config.js
     │   ├── page.tsx               dashboard (thin)
-    │   ├── login/page.tsx
+    │   ├── login/page.tsx         reviewer credentials + fill button
     │   ├── register/page.tsx
+    │   ├── forgot-password/page.tsx
+    │   ├── reset/[token]/page.tsx
     │   ├── invite/[token]/page.tsx
     │   ├── team/page.tsx          collaboration
+    │   ├── settings/page.tsx      account + embedded team
     │   ├── builder/[id]/page.tsx  builder (thin)
     │   └── f/[slug]/page.tsx      public fill (thin, no auth)
     ├── components/
-    │   ├── layout/                WorkspaceShell, AppHeader
+    │   ├── layout/                WorkspaceShell (Home / Workspace / Settings), AppHeader
     │   ├── dashboard/             form cards, rename modal, TemplatesGallery
-    │   ├── builder/               canvas, list, settings, logic, ActivityLog
-    │   ├── results/               table, modal, stats
-    │   ├── settings/              theme, thank-you, webhook
-    │   ├── respondent/            welcome, question, thank-you
-    │   ├── team/                  invite + copy link + member list
+    │   ├── builder/               canvas, QuestionList (live drag-gap + overlay), logic, ActivityLog
+    │   ├── results/               QuestionInsight, StatsStrip, ResponseTable, ResponseModal
+    │   ├── settings/              AccountSettings; form SettingsView (description textarea, theme, thank-you, webhook)
+    │   ├── respondent/            welcome, question, thank-you (no powered-by footer)
+    │   ├── team/                  invite + copy link + member list (owner-gated)
     │   └── shared/                Toast, Modal, StatusBadge
     ├── hooks/                     useForms, useBuilder, useRespondent, useToast, useCurrentUser
-    ├── lib/                       api client (8s timeout), auth token, types, validation, templates, errors
+    ├── lib/                       api client (8s timeout), auth token, types, validation, templates, errors, access
     └── styles/                    dashboard, builder, respondent, results, settings
 ```
 
@@ -104,6 +108,7 @@ formly/
 | `hooks/` | client state + calling `lib/api` | JSX layout |
 | `lib/api.ts` | HTTP + timeout | React |
 | `lib/errors.ts` | user-facing copy from status / network | fetch |
+| `lib/access.ts` | `isOwner()` for invite/remove UI | HTTP |
 | `lib/templates.ts` | starter-kit payloads | HTTP |
 | `api/routes` | HTTP status + wiring | SQL queries |
 | `services/` | validation, publish, submit, webhooks, invites | FastAPI `Request` objects |

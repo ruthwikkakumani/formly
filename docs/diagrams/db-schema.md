@@ -98,6 +98,16 @@ erDiagram
     text detail
     datetime created_at
   }
+
+  password_resets {
+    int id PK
+    string token UK
+    int member_id
+    string email
+    datetime created_at
+    datetime expires_at
+    datetime used_at
+  }
 ```
 
 ## Constraints and rules
@@ -112,8 +122,11 @@ erDiagram
 | `questions.logic` JSON | `{ rules: [{ option, target_id, end }] }` |
 | `forms.theme` JSON | colors, font, thankYou, darkMode |
 | `partial_responses.visitor_id` unique | one in-progress blob per browser |
+| `workspace_members.role` | `owner` (full), `editor` (forms), or `viewer` (read-only). Owner invites/removes and can switch viewer ↔ editor |
+| Seeded reviewer | On boot, `reviewer@formly.dev` is inserted as `editor` if missing (`REVIEWER_EMAIL` / `REVIEWER_PASSWORD`). Not the owner |
 | `workspace_invites.status` | `pending`, `accepted`, `revoked`, `expired` |
 | `workspace_invites.email_error` | last SMTP failure (null if sent or not yet attempted); copy link still works |
+| `password_resets.token` | unique; 1 hour expiry; `used_at` set after reset or when superseded |
 | `form_presence (form_id, email)` unique | one live editor row per person per form |
 | `form_presence.last_seen` | drop from UI if older than 8 seconds; leave deletes the row |
 | `form_activity.action` | `created`, `saved`, `renamed`, `published`, `draft`, `duplicated` |
@@ -131,3 +144,4 @@ erDiagram
 - `workspace_invites.token`, `workspace_invites.email`, `workspace_invites.status`
 - `form_presence.form_id`, `form_presence.email`
 - `form_activity.form_id`
+- `password_resets.token`, `password_resets.member_id`, `password_resets.email`

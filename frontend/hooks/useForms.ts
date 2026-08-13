@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { canEditForms } from "@/lib/access";
 import { formsApi } from "@/lib/api";
 import { createQuestion } from "@/lib/constants";
 import { MESSAGES, messageFromUnknown } from "@/lib/errors";
@@ -16,7 +17,8 @@ export function useForms() {
   const [error, setError] = useState("");
   const [creatingTemplateId, setCreatingTemplateId] = useState<string | null>(null);
   const { toast, showToast, flashToast } = useToast();
-  const { actor } = useCurrentUser();
+  const { actor, current } = useCurrentUser();
+  const canEdit = canEditForms(current);
 
   const load = useCallback(async () => {
     try {
@@ -34,6 +36,10 @@ export function useForms() {
   }, [load]);
 
   async function run(action: () => Promise<void>, ok: string) {
+    if (!canEdit) {
+      showToast(MESSAGES.viewOnly, "error");
+      return;
+    }
     try {
       await action();
       showToast(ok);
@@ -44,6 +50,10 @@ export function useForms() {
   }
 
   async function createForm() {
+    if (!canEdit) {
+      showToast(MESSAGES.viewOnly, "error");
+      return;
+    }
     try {
       const form = await formsApi.create({
         title: "Untitled form",
@@ -86,6 +96,10 @@ export function useForms() {
   }
 
   async function createFromTemplate(template: FormTemplate) {
+    if (!canEdit) {
+      showToast(MESSAGES.viewOnly, "error");
+      return;
+    }
     if (creatingTemplateId) return;
     setCreatingTemplateId(template.id);
     try {
@@ -103,6 +117,7 @@ export function useForms() {
     loading,
     error,
     toast,
+    canEdit,
     creatingTemplateId,
     createForm,
     createFromTemplate,

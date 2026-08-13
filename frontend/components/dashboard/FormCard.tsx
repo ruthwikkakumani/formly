@@ -9,6 +9,7 @@ import { RenameModal } from "./RenameModal";
 
 export function FormCard({
   form,
+  canEdit = true,
   onRename,
   onDuplicate,
   onPublish,
@@ -16,6 +17,7 @@ export function FormCard({
   onCopyLink,
 }: {
   form: FormDefinition;
+  canEdit?: boolean;
   onRename: (id: number, title: string) => Promise<void>;
   onDuplicate: (id: number) => Promise<void>;
   onPublish: (form: FormDefinition) => Promise<void>;
@@ -29,29 +31,37 @@ export function FormCard({
     <article className="formcard">
       <div className="cardtop">
         <StatusBadge status={form.status} />
-        <div className="menuwrap">
-          <button className="dots" onClick={() => setMenu((open) => !open)} aria-label="Form actions">
-            ⋯
-          </button>
-          {menu && (
-            <div className="menu">
-              <button onClick={() => { setRenaming(true); setMenu(false); }}>Rename</button>
-              <button onClick={() => { void onDuplicate(form.id); setMenu(false); }}>Duplicate</button>
-              {form.status === "published" && (
-                <button onClick={() => { void onCopyLink(form.slug); setMenu(false); }}>Copy link</button>
-              )}
-              <button
-                className="danger"
-                onClick={() => {
-                  if (confirm("Delete this form and its responses?")) void onDelete(form.id);
-                  setMenu(false);
-                }}
-              >
-                Delete
-              </button>
-            </div>
-          )}
-        </div>
+        {canEdit || form.status === "published" ? (
+          <div className="menuwrap">
+            <button className="dots" onClick={() => setMenu((open) => !open)} aria-label="Form actions">
+              ⋯
+            </button>
+            {menu && (
+              <div className="menu">
+                {canEdit ? (
+                  <button onClick={() => { setRenaming(true); setMenu(false); }}>Rename</button>
+                ) : null}
+                {canEdit ? (
+                  <button onClick={() => { void onDuplicate(form.id); setMenu(false); }}>Duplicate</button>
+                ) : null}
+                {form.status === "published" && (
+                  <button onClick={() => { void onCopyLink(form.slug); setMenu(false); }}>Copy link</button>
+                )}
+                {canEdit ? (
+                  <button
+                    className="danger"
+                    onClick={() => {
+                      if (confirm("Delete this form and its responses?")) void onDelete(form.id);
+                      setMenu(false);
+                    }}
+                  >
+                    Delete
+                  </button>
+                ) : null}
+              </div>
+            )}
+          </div>
+        ) : null}
       </div>
       <Link href={`/builder/${form.id}`}>
         <div className="cardpreview">{form.questions[0]?.title || "Untitled question"}</div>
@@ -63,19 +73,21 @@ export function FormCard({
         <span>{form.updated_by ? `Edited by ${form.updated_by}` : `${form.questions.length} questions`}</span>
       </footer>
       <div className="cardactions">
-        <button onClick={() => void onPublish(form)}>
-          {form.status === "draft" ? "Publish" : "Unpublish"}
-        </button>
+        {canEdit ? (
+          <button onClick={() => void onPublish(form)}>
+            {form.status === "draft" ? "Publish" : "Unpublish"}
+          </button>
+        ) : null}
         {form.status === "published" && (
           <Link href={`/f/${form.slug}`} target="_blank">
             Open ↗
           </Link>
         )}
-        <Link href={`/builder/${form.id}`}>Edit</Link>
+        <Link href={`/builder/${form.id}`}>{canEdit ? "Edit" : "View"}</Link>
       </div>
-      {renaming && (
+      {renaming && canEdit ? (
         <RenameModal title={form.title} onClose={() => setRenaming(false)} onSave={(title) => onRename(form.id, title)} />
-      )}
+      ) : null}
     </article>
   );
 }

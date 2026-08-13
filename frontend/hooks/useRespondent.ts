@@ -88,11 +88,7 @@ export function useRespondent(slug: string) {
   };
 
   const back = () => {
-    if (index === 0) {
-      setDirection("down");
-      setStep("welcome");
-      return;
-    }
+    if (step !== "question" || index === 0) return;
     setDirection("down");
     setIndex(index - 1);
   };

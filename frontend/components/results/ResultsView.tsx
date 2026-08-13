@@ -2,15 +2,24 @@
 
 import { useEffect, useState } from "react";
 
-import { EmptyState } from "@/components/shared/EmptyState";
 import { Toast } from "@/components/shared/Toast";
 import { formsApi } from "@/lib/api";
 import { MESSAGES, messageFromUnknown } from "@/lib/errors";
-import { FormResponse, FormStats, Question } from "@/lib/types";
+import { FormResponse, FormStats, Question, QuestionStat } from "@/lib/types";
 import { useToast } from "@/hooks/useToast";
 import { ResponseModal } from "./ResponseModal";
 import { ResponseTable } from "./ResponseTable";
 import { StatsStrip } from "./StatsStrip";
+
+function fallbackStats(questions: Question[]): QuestionStat[] {
+  return questions.map((question) => ({
+    question_id: question.id || 0,
+    title: question.title,
+    type: question.type,
+    responses: 0,
+    counts: {},
+  }));
+}
 
 export function ResultsView({ id, questions }: { id: string; questions: Question[] }) {
   const [responses, setResponses] = useState<FormResponse[]>([]);
@@ -32,12 +41,31 @@ export function ResultsView({ id, questions }: { id: string; questions: Question
       .finally(() => setLoading(false));
   }, [id, showToast]);
 
+  const insights = stats?.questions?.length ? stats.questions : fallbackStats(questions);
+  const rate = stats?.completion.rate || 0;
+  const completed = stats?.completion.completed || 0;
+  const inProgress = stats?.completion.in_progress || 0;
+
   return (
     <section className="results">
       <div className="resultshead">
-        <h2>
-          Responses <span>{responses.length}</span>
-        </h2>
+        <div>
+          <h2>
+            Responses <span>{responses.length}</span>
+          </h2>
+          <div className="resultsMeta">
+            <p className="completion">
+              <span>
+                <b>{rate}%</b> completion
+              </span>
+              <span>{completed} completed</span>
+              <span>{inProgress} in progress</span>
+            </p>
+            <div className="completionTrack" aria-hidden="true">
+              <span style={{ width: `${rate}%` }} />
+            </div>
+          </div>
+        </div>
         <button
           className="save"
           type="button"
@@ -51,19 +79,13 @@ export function ResultsView({ id, questions }: { id: string; questions: Question
           Export CSV
         </button>
       </div>
-      <p className="completion">
-        Completion rate: <b>{stats?.completion.rate || 0}%</b> · {stats?.completion.completed || 0} completed ·{" "}
-        {stats?.completion.in_progress || 0} in progress
-      </p>
       {loading ? (
-        <p className="completion">Loading responses…</p>
-      ) : responses.length ? (
+        <p className="resultsHint">Loading responses…</p>
+      ) : (
         <>
-          <StatsStrip stats={stats?.questions || []} />
+          <StatsStrip stats={insights} questions={questions} responses={responses} />
           <ResponseTable responses={responses} questions={questions} onOpen={setOpen} />
         </>
-      ) : (
-        <EmptyState title="No responses yet" body="Publish the form and share the link to start collecting answers." />
       )}
       {open && <ResponseModal response={open} questions={questions} onClose={() => setOpen(undefined)} />}
       <Toast {...toast} />
