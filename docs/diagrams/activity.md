@@ -52,7 +52,7 @@ flowchart TD
   B --> E[GET presence]
   D --> E
   E --> F{Other last_seen < 8s?}
-  F -->|Yes| G[Show "X editing"]
+  F -->|Yes| G[Show teammate editing]
   F -->|No| H[Show Only you]
   B --> I[Poll GET form]
   I --> J{updated_at changed?}
