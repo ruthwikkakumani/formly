@@ -2,6 +2,7 @@
   padding: 28px 32px 40px;
   overflow: auto;
   height: calc(100vh - 56px);
+  animation: fade var(--motion);
 }
 
 .resultshead {
@@ -109,6 +110,10 @@
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow);
+}
+
+.insight:hover {
+  border-color: #d4d4ce;
 }
 
 .insightBody {
@@ -429,6 +434,10 @@
   border-bottom: 1px solid #eee;
   max-width: 220px;
   word-break: break-word;
+}
+
+.responseTable td {
+  transition: background-color var(--motion);
 }
 
 .responseTable th {

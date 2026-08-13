@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useRef, useState } from "react";
 
+import { SlideThumb } from "@/components/shared/SlideThumb";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { getToken } from "@/lib/auth";
 import { MESSAGES } from "@/lib/errors";
@@ -25,11 +26,16 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const [isNarrow, setIsNarrow] = useState(false);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const navRef = useRef<HTMLElement>(null);
 
-  const item = (href: string, label: string) => (
-    <Link href={href} className={path === href || (href !== "/" && path.startsWith(href)) ? "navon" : ""}>
-      {label}
-    </Link>
+  const links = [
+    { href: "/", label: "Home", on: path === "/" },
+    { href: "/team", label: "Workspace", on: path === "/team" || path.startsWith("/team/") },
+    { href: "/settings", label: "Settings", on: path === "/settings" || path.startsWith("/settings/") },
+  ];
+  const navIndex = Math.max(
+    0,
+    links.findIndex((link) => link.on),
   );
 
   useEffect(() => {
@@ -132,10 +138,13 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             <span aria-hidden="true">×</span>
           </button>
         </div>
-        <nav>
-          {item("/", "Home")}
-          {item("/team", "Workspace")}
-          {item("/settings", "Settings")}
+        <nav ref={navRef} className="sidenav-links">
+          <SlideThumb navRef={navRef} index={navIndex} axis="y" className="sidenav-thumb" />
+          {links.map((link) => (
+            <Link key={link.href} href={link.href} data-thumb className={link.on ? "navon" : ""}>
+              {link.label}
+            </Link>
+          ))}
         </nav>
         <div className="sidecard">
           <div className="sidecard-user">

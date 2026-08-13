@@ -37,8 +37,11 @@ export function BuilderHeader({
   return (
     <header className="builderhead">
       <div className="builderid">
-        <Link href="/" className="brand">
-          formly<span>•</span>
+        <Link href="/" className="builderback" aria-label="Back to forms">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M10 3.5 5.5 8 10 12.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Forms
         </Link>
         <input
           value={form.title}
@@ -47,14 +50,19 @@ export function BuilderHeader({
           aria-label="Form title"
           readOnly={readOnly}
         />
-        <div className="presence">
-          {others.length ? (
-            <span className="livepill">{others.map((editor) => editor.name).join(", ")} editing</span>
-          ) : (
-            <span className="livepill quiet">Only you</span>
-          )}
-          <span className="savedby">{dirty ? "Unsaved changes" : `Last saved by ${form.updated_by || "—"}`}</span>
-        </div>
+      </div>
+      <div className="presence">
+        {others.length ? (
+          <span className="livepill">{others.map((editor) => editor.name).join(", ")} editing</span>
+        ) : (
+          <span className="livepill quiet">Only you</span>
+        )}
+        <span
+          className="savedby"
+          title={dirty ? "Unsaved changes" : `Last saved by ${form.updated_by || "—"}`}
+        >
+          {dirty ? "Unsaved changes" : `Last saved by ${form.updated_by || "—"}`}
+        </span>
       </div>
       <nav className="buildertabs" aria-label="Builder sections">
         {TABS.map((item) => (

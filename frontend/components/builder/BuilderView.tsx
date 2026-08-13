@@ -40,52 +40,54 @@ export function BuilderView({ id }: { id: string }) {
         onPublish={() => void builder.publish()}
         onCopyLink={() => void builder.copyLink()}
       />
-      {builder.tab === "Build" && question && (
-        <div className="buildbody">
-          <div className="buildleft">
-            <QuestionList
+      <div className="buildswitch">
+        {builder.tab === "Build" && question ? (
+          <div className="buildbody">
+            <div className="buildleft">
+              <QuestionList
+                questions={builder.form.questions}
+                selected={builder.selected}
+                readOnly={readOnly}
+                onSelect={builder.setSelected}
+                onReorder={builder.reorder}
+                onAdd={() => builder.addQuestion()}
+              />
+              {readOnly ? null : <QuestionTypePicker onAdd={builder.addQuestion} />}
+            </div>
+            <BuilderCanvas
+              question={question}
+              index={builder.selected}
+              total={builder.form.questions.length}
+              accent={builder.form.theme.accent}
+              thankYou={builder.form.theme.thankYou}
+              readOnly={readOnly}
+              onChange={builder.changeQuestion}
+              onSelect={builder.setSelected}
+            />
+            <QuestionEditor
+              question={question}
               questions={builder.form.questions}
               selected={builder.selected}
               readOnly={readOnly}
-              onSelect={builder.setSelected}
+              onChange={builder.changeQuestion}
               onReorder={builder.reorder}
-              onAdd={() => builder.addQuestion()}
+              onRemove={builder.removeQuestion}
             />
-            {readOnly ? null : <QuestionTypePicker onAdd={builder.addQuestion} />}
           </div>
-          <BuilderCanvas
-            question={question}
-            index={builder.selected}
-            total={builder.form.questions.length}
-            accent={builder.form.theme.accent}
-            thankYou={builder.form.theme.thankYou}
-            readOnly={readOnly}
-            onChange={builder.changeQuestion}
-            onSelect={builder.setSelected}
-          />
-          <QuestionEditor
-            question={question}
-            questions={builder.form.questions}
-            selected={builder.selected}
-            readOnly={readOnly}
-            onChange={builder.changeQuestion}
-            onReorder={builder.reorder}
-            onRemove={builder.removeQuestion}
-          />
-        </div>
-      )}
-      {builder.tab === "Results" && <ResultsView id={id} questions={builder.form.questions} />}
-      {builder.tab === "Settings" && (
-        <>
-          <SettingsView
-            form={builder.form}
-            readOnly={readOnly}
-            onChange={builder.change}
-            onSave={() => void builder.save()}
-          />
-          <ActivityLog events={builder.activity} />
-        </>
-      )}
+        ) : null}
+        {builder.tab === "Results" ? <ResultsView id={id} questions={builder.form.questions} /> : null}
+        {builder.tab === "Settings" ? (
+          <>
+            <SettingsView
+              form={builder.form}
+              readOnly={readOnly}
+              onChange={builder.change}
+              onSave={() => void builder.save()}
+            />
+            <ActivityLog events={builder.activity} />
+          </>
+        ) : null}
+      </div>
       <Toast {...builder.toast} />
     </main>
   );

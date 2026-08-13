@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { SlideThumb } from "@/components/shared/SlideThumb";
 import { Toast } from "@/components/shared/Toast";
 import { useForms } from "@/hooks/useForms";
 import { FormDefinition, FormStatus } from "@/lib/types";
@@ -34,9 +35,25 @@ function filterForms(forms: FormDefinition[], query: string, status: StatusFilte
 export function DashboardView() {
   const workspace = useForms();
   const searchRef = useRef<HTMLInputElement>(null);
+  const filterRef = useRef<HTMLElement | null>(null);
   const [tab, setTab] = useState<"forms" | "templates">("forms");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
+  const [ready, setReady] = useState(false);
+  const statusIndex = STATUS_FILTERS.findIndex((option) => option.value === status);
+
+  useEffect(() => {
+    let cancelled = false;
+    const frame = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!cancelled) setReady(true);
+      });
+    });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+    };
+  }, []);
 
   function clearSearch() {
     setQuery("");
@@ -50,7 +67,7 @@ export function DashboardView() {
 
   return (
     <WorkspaceShell>
-      <main className="dashboard">
+      <main className={`dashboard${ready ? " is-in" : ""}`}>
         <section className="dashhead">
           <div>
             <p className="eyebrow">MY WORKSPACE</p>
@@ -74,7 +91,7 @@ export function DashboardView() {
             </button>
           </div>
           <div className="dashtools">
-            <label className="dashsearch">
+            <label className={`dashsearch${query ? " has-query" : ""}`}>
               <input
                 ref={searchRef}
                 type="search"
@@ -85,31 +102,32 @@ export function DashboardView() {
                 autoComplete="off"
                 spellCheck={false}
               />
-              {query ? (
-                <button
-                  type="button"
-                  className="dashsearch-clear"
-                  aria-label="Clear search"
-                  onClick={clearSearch}
-                >
-                  <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-                    <path
-                      d="M1.5 1.5l7 7M8.5 1.5l-7 7"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.7"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </button>
-              ) : null}
+              <button
+                type="button"
+                className="dashsearch-clear"
+                aria-label="Clear search"
+                tabIndex={query ? 0 : -1}
+                onClick={clearSearch}
+              >
+                <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+                  <path
+                    d="M1.5 1.5l7 7M8.5 1.5l-7 7"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
             </label>
             {tab === "forms" ? (
-              <div className="dashfilter" role="group" aria-label="Filter by status">
+              <div ref={filterRef} className="dashfilter" role="group" aria-label="Filter by status">
+                <SlideThumb navRef={filterRef} index={Math.max(0, statusIndex)} className="dashfilter-thumb" />
                 {STATUS_FILTERS.map((option) => (
                   <button
                     key={option.value}
                     type="button"
+                    data-thumb
                     className={status === option.value ? "filteron" : ""}
                     aria-pressed={status === option.value}
                     onClick={() => setStatus(option.value)}
