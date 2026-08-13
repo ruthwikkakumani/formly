@@ -33,7 +33,7 @@ export const MESSAGES = {
   exportFailed: "We couldn't export responses just now. Please try again.",
   uploadFailed: "We couldn't upload that file. Please try again.",
   teamLoadFailed: "We couldn't load the workspace team.",
-  inviteSendFailed: "We couldn't send that invite. Please try again.",
+  inviteSendFailed: "The invite email could not be sent. Copy the invite link and share it, or try again.",
   inviteRevokeFailed: "We couldn't revoke that invite.",
   memberRemoveFailed: "We couldn't remove that teammate.",
   copyFailed: "We couldn't copy the link. Please copy it from the address bar instead.",
@@ -129,7 +129,8 @@ export function messageFromStatus(status: number, detail: string, context: Error
   return MESSAGES.generic;
 }
 
-export function messageFromNetworkError(error: unknown): string {
+export function messageFromNetworkError(error: unknown, context: ErrorContext = "api"): string {
+  if (context === "invite") return MESSAGES.inviteSendFailed;
   const lower = rawText(error).toLowerCase();
   if (NETWORK_MARKERS.some((marker) => lower.includes(marker))) return MESSAGES.network;
   if (lower.includes("timeout") || lower.includes("timed out") || lower.includes("err_timed_out")) {
@@ -142,6 +143,14 @@ export function messageFromNetworkError(error: unknown): string {
 export function messageFromUnknown(error: unknown, fallback: string = MESSAGES.generic): string {
   const raw = rawText(error);
   const lower = raw.toLowerCase();
+  const networkOrTimeout =
+    raw === MESSAGES.network ||
+    raw === MESSAGES.timeout ||
+    NETWORK_MARKERS.some((marker) => lower.includes(marker)) ||
+    lower.includes("timeout") ||
+    lower.includes("timed out") ||
+    lower.includes("err_timed_out");
+  if (fallback === MESSAGES.inviteSendFailed && networkOrTimeout) return fallback;
   if (NETWORK_MARKERS.some((marker) => lower.includes(marker))) return MESSAGES.network;
   if (lower.includes("timeout") || lower.includes("timed out") || lower.includes("err_timed_out")) {
     return MESSAGES.timeout;

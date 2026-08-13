@@ -26,8 +26,10 @@ export function TeamView() {
       const [nextMembers, nextInvites] = await Promise.all([teamApi.list(), teamApi.invites()]);
       setMembers(nextMembers);
       setInvites(nextInvites);
+      return nextInvites;
     } catch (error) {
       showToast(messageFromUnknown(error, MESSAGES.teamLoadFailed), "error");
+      return [] as WorkspaceInvite[];
     }
   }
 
@@ -68,15 +70,22 @@ export function TeamView() {
       await load();
     } catch (error) {
       showToast(messageFromUnknown(error, MESSAGES.inviteSendFailed), "error");
+      const nextInvites = await load();
+      const match = nextInvites.find((row) => row.email === trimmedEmail && row.accept_url);
+      if (match?.accept_url) {
+        setShareLink(match.accept_url);
+        setCopied(false);
+      }
     } finally {
       setSending(false);
     }
   }
 
-  async function copyShareLink() {
-    if (!shareLink) return;
+  async function copyInviteLink(url: string) {
+    if (!url) return;
     try {
-      await navigator.clipboard.writeText(shareLink);
+      await navigator.clipboard.writeText(url);
+      setShareLink(url);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -132,7 +141,7 @@ export function TeamView() {
           <p>The invite was created, but the email could not be sent. Copy the link and share it directly.</p>
           <div className="invite-share-row">
             <input readOnly value={shareLink} aria-label="Invite link" onFocus={(event) => event.target.select()} />
-            <button type="button" className="primary" onClick={() => void copyShareLink()}>
+            <button type="button" className="primary" onClick={() => void copyInviteLink(shareLink)}>
               {copied ? "Copied" : "Copy invite link"}
             </button>
           </div>
@@ -150,6 +159,11 @@ export function TeamView() {
                 </p>
               </div>
               <span className="status">pending</span>
+              {inviteRow.accept_url ? (
+                <button type="button" onClick={() => void copyInviteLink(inviteRow.accept_url || "")}>
+                  Copy invite link
+                </button>
+              ) : null}
               <button
                 className="danger"
                 onClick={async () => {

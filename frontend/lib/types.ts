@@ -98,6 +98,7 @@ export interface WorkspaceInvite {
   status: "pending" | "accepted" | "revoked" | "expired";
   created_at?: string;
   expires_at?: string;
+  accept_url?: string;
 }
 
 export interface InviteCreateResult {

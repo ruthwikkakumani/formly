@@ -1,4 +1,3 @@
-import sys
 from datetime import datetime
 from uuid import uuid4
 
@@ -24,6 +23,7 @@ class InviteService:
             "status": invite.status,
             "created_at": invite.created_at,
             "expires_at": invite.expires_at,
+            "accept_url": f"{settings.frontend_url.rstrip('/')}/invite/{invite.token}",
         }
 
     def list_pending(self, db: Session) -> list[dict]:
@@ -66,7 +66,7 @@ class InviteService:
             db.refresh(invite)
         except Exception as error:
             db.rollback()
-            print(f"Workspace invite persist failed: {error!r}", file=sys.stderr, flush=True)
+            print(f"Workspace invite persist failed: {error!r}", flush=True)
             raise HTTPException(
                 status_code=502,
                 detail="We couldn't create that invite. Please try again.",

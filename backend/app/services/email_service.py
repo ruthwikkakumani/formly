@@ -1,7 +1,6 @@
 import json
 import smtplib
 import ssl
-import sys
 import urllib.error
 import urllib.request
 from email.message import EmailMessage
@@ -44,7 +43,7 @@ def send_invite_email(to_email: str, name: str, role: str, accept_url: str) -> t
 
 
 def _log_email_error(channel: str, error: BaseException) -> None:
-    print(f"Invite email {channel} failed: {error!r}", file=sys.stderr, flush=True)
+    print(f"Invite email {channel} failed: {error!r}", flush=True)
 
 
 def _send_resend(to_email: str, subject: str, text: str, html: str) -> tuple[bool, str]:
@@ -67,7 +66,7 @@ def _send_resend(to_email: str, subject: str, text: str, html: str) -> tuple[boo
         },
     )
     try:
-        with urllib.request.urlopen(request, timeout=20) as response:
+        with urllib.request.urlopen(request, timeout=5) as response:
             if response.status >= 300:
                 body = response.read()
                 _log_email_error("Resend", RuntimeError(f"status={response.status} body={body!r}"))
@@ -98,7 +97,7 @@ def _send_smtp(to_email: str, subject: str, text: str, html: str) -> tuple[bool,
     message.add_alternative(html, subtype="html")
     context = ssl.create_default_context()
     try:
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=12) as smtp:
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=4) as smtp:
             smtp.starttls(context=context)
             smtp.login(settings.smtp_user, settings.smtp_password)
             smtp.send_message(message)

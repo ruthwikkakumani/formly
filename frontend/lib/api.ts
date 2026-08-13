@@ -32,7 +32,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   try {
     response = await fetch(`${apiBase()}${path}`, { ...init, headers });
   } catch (error) {
-    throw new Error(messageFromNetworkError(error));
+    throw new Error(messageFromNetworkError(error, contextFromPath(path)));
   }
   if (
     response.status === 401 &&
