@@ -32,12 +32,12 @@ For a hosted frontend, set `NEXT_PUBLIC_API_URL` to the deployed backend URL fol
 
 ## Features
 
-- Form CRUD: create, rename (inline), duplicate, delete, publish/unpublish and share link
-- Builder: ordered questions, add/edit/delete/reorder controls, eight question types, required/help settings, live preview, save toast
-- Public full-screen conversational flow: transitions, progress, Enter navigation, client and server validation, thank-you state
-- Results: persisted submissions, submission table and choice-question counts
-- Builder tabs include practical Results plus a Settings placeholder tab
-- Fresh database seeding creates a published Product Feedback form and sample response
+- Form CRUD: create, rename (inline), duplicate, delete, publish/unpublish and a copyable public share link
+- Builder: ordered questions, native drag-and-drop reorder plus move controls, eight question types, required/help settings, live preview, save toast
+- Public full-screen conversational flow: transitions, progress, Enter/Arrow navigation, client and server validation, and a customizable thank-you state
+- Results: persisted submissions, clickable individual-response detail modal, submission table and choice-question counts
+- Settings: editable text/background theme colors and thank-you copy; clearly labelled Coming Soon placeholders for advanced features
+- Fresh database seeding creates two published mixed-question forms with sample responses
 
 ## Architecture
 
@@ -63,4 +63,4 @@ Deleting a form cascades to its questions, responses and answers. Answers remain
 
 ## Assumptions and placeholders
 
-The assignment permits simplified creator auth, so Formly uses a default workspace. Settings is intentionally a placeholder tab; integrations, logic jumps, team collaboration, payments, and file uploads are outside the required feature set. Reordering is presented with clear move controls, which is keyboard/touch accessible; native drag-and-drop can be added without changing the persistence schema.
+The assignment permits simplified creator auth, so Formly uses a default workspace. Integrations, logic jumps, team collaboration, payments, and file uploads are intentionally labelled as Coming Soon. Hosting and publishing the local Git repository are submission steps; no remote push was made at the user's request.
