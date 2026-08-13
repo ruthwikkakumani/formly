@@ -27,6 +27,22 @@ cd frontend && npm install && npm run dev
 
 Open http://localhost:3000 — API docs at http://localhost:8000/docs.
 
+## Design docs (LLD + UML)
+
+Full LLD, folder map, and diagrams live in **[`docs/`](./docs/README.md)** (Mermaid, renders on GitHub).
+
+| Doc | Link |
+|---|---|
+| LLD | [docs/lld.md](./docs/lld.md) |
+| Folder structure | [docs/folder-structure.md](./docs/folder-structure.md) |
+| Use case | [docs/diagrams/use-case.md](./docs/diagrams/use-case.md) |
+| Class / UML | [docs/diagrams/class-uml.md](./docs/diagrams/class-uml.md) |
+| Sequence | [docs/diagrams/sequence.md](./docs/diagrams/sequence.md) |
+| Activity | [docs/diagrams/activity.md](./docs/diagrams/activity.md) |
+| State machines | [docs/diagrams/state.md](./docs/diagrams/state.md) |
+| DB / ER schema | [docs/diagrams/db-schema.md](./docs/diagrams/db-schema.md) |
+| Component + deploy | [docs/diagrams/component.md](./docs/diagrams/component.md) |
+
 ## Architecture
 
 ```
@@ -35,23 +51,64 @@ Page → View → Hook → lib/api → FastAPI route → Service → Repository 
 
 Public fill (`/f/{slug}` and `/api/public/...`) never requires auth. Draft forms return 404 on the public API.
 
+## Folder structure
+
 ```
-backend/app/   core, db, models, schemas, repositories, services, api/routes
-frontend/        app (thin pages), components, hooks, lib, styles
+formly/
+├── docs/                 LLD + UML + sequence + ER
+├── backend/
+│   ├── main.py           app composition root
+│   └── app/
+│       ├── core/         config, constants
+│       ├── db/           engine, session
+│       ├── models/       Form, Question, Response, Answer, Partial, Member
+│       ├── schemas/      Pydantic DTOs
+│       ├── repositories/ SQL access
+│       ├── services/     rules, validation, seed, webhooks
+│       └── api/routes/   forms, public, team, health
+└── frontend/
+    ├── app/              thin routes: /, /builder/[id], /f/[slug], /team
+    ├── components/       dashboard, builder, results, settings, respondent, team
+    ├── hooks/            useForms, useBuilder, useRespondent
+    ├── lib/              api, types, validation
+    └── styles/           per-surface CSS
 ```
 
 ## Database schema
 
-```
-forms                 id, title, description, status, slug, webhook_url, theme JSON, timestamps
-questions             id, form_id → forms, position, type, title, description, required, options JSON, logic JSON
-responses             id, form_id → forms, submitted_at
-answers               id, response_id → responses, question_id → questions, value
-partial_responses     id, form_id → forms, visitor_id UNIQUE, answers JSON, updated_at
-workspace_members     id, name, email UNIQUE, role (owner|editor|viewer), created_at
+```mermaid
+erDiagram
+  forms ||--|{ questions : has
+  forms ||--o{ responses : collects
+  forms ||--o{ partial_responses : tracks
+  responses ||--|{ answers : contains
+  questions ||--o{ answers : answered_as
+
+  forms {
+    int id PK
+    string slug UK
+    string status
+    json theme
+  }
+  questions {
+    int id PK
+    int form_id FK
+    int position
+    string type
+  }
+  responses {
+    int id PK
+    int form_id FK
+  }
+  answers {
+    int id PK
+    int response_id FK
+    int question_id FK
+    text value
+  }
 ```
 
-Saving a form updates questions by id so historical answers are kept.
+Saving a form updates questions by id so historical answers are kept. Full column list: [docs/diagrams/db-schema.md](./docs/diagrams/db-schema.md).
 
 ## API overview
 
