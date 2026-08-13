@@ -43,7 +43,7 @@ def _ensure_sqlite_columns() -> None:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    settings.upload_dir.mkdir(exist_ok=True)
+    settings.upload_dir.mkdir(parents=True, exist_ok=True)
     Base.metadata.create_all(engine)
     _ensure_sqlite_columns()
     db = SessionLocal()
@@ -63,5 +63,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+settings.upload_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads")
 app.include_router(api_router, prefix=settings.api_prefix)
