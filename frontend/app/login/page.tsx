@@ -21,7 +21,7 @@ export default function LoginPage() {
       setToken(session.token);
       window.location.href = "/";
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not sign in");
+      setError(err instanceof Error ? err.message : "We couldn't sign you in. Please try again.");
     } finally {
       setBusy(false);
     }

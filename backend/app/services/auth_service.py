@@ -18,14 +18,20 @@ class AuthService:
     def register(self, db: Session, payload: RegisterPayload) -> dict:
         email = str(payload.email).lower()
         if db.query(Member).filter(Member.email == email).first():
-            raise HTTPException(status_code=409, detail="An account with that email already exists")
+            raise HTTPException(
+                status_code=409,
+                detail="An account with this email already exists. Sign in instead.",
+            )
         real_users = (
             db.query(Member)
             .filter(Member.password_hash.is_not(None), Member.password_hash != "")
             .count()
         )
         if real_users:
-            raise HTTPException(status_code=403, detail="Ask a teammate to send you an invite link")
+            raise HTTPException(
+                status_code=403,
+                detail="This workspace already has an owner. Sign in with that account, or ask them to send you an invite.",
+            )
         db.query(Member).filter(or_(Member.password_hash.is_(None), Member.password_hash == "")).delete(
             synchronize_session=False
         )
@@ -44,5 +50,5 @@ class AuthService:
         email = str(payload.email).lower()
         member = db.query(Member).filter(Member.email == email).first()
         if not member or not verify_password(payload.password, member.password_hash or ""):
-            raise HTTPException(status_code=401, detail="Wrong email or password")
+            raise HTTPException(status_code=401, detail="That email or password is incorrect.")
         return self.session(member)

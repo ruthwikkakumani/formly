@@ -22,7 +22,7 @@ export default function RegisterPage() {
       setToken(session.token);
       window.location.href = "/";
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create account");
+      setError(err instanceof Error ? err.message : "We couldn't create your account. Please try again.");
     } finally {
       setBusy(false);
     }

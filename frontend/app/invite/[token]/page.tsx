@@ -35,7 +35,7 @@ export default function AcceptInvitePage() {
       setToken(session.token);
       window.location.href = "/";
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not accept invite");
+      setError(err instanceof Error ? err.message : "We couldn't accept this invite. Please try again.");
     } finally {
       setBusy(false);
     }
