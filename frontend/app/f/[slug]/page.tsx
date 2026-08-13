@@ -15,7 +15,14 @@ export default function PublicForm() {
   }, [slug]);
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
-      if (e.key === "Enter" && n >= 0) next();
+      if (["Enter", "ArrowRight", "ArrowDown"].includes(e.key) && n >= 0) {
+        e.preventDefault();
+        next();
+      }
+      if (["ArrowLeft", "ArrowUp"].includes(e.key) && n > 0) {
+        e.preventDefault();
+        setN(n - 1);
+      }
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
@@ -59,7 +66,7 @@ export default function PublicForm() {
         <div className="welcome thanks">
           <div>✓</div>
           <h1>Thank you!</h1>
-          <p>Your response has been submitted.</p>
+          <p>{f.theme.thankYou || "Your response has been submitted."}</p>
         </div>
       </main>
     );
@@ -125,7 +132,7 @@ export default function PublicForm() {
         <button className="ok" onClick={next}>
           OK <kbd>↵</kbd>
         </button>
-        <small>press Enter ↵</small>
+        <small>press Enter ↵ or use arrow keys</small>
       </div>
     </main>
   );
