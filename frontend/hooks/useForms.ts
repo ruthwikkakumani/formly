@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { canEditForms } from "@/lib/access";
@@ -12,6 +13,7 @@ import { useCurrentUser } from "./useCurrentUser";
 import { useToast } from "./useToast";
 
 export function useForms() {
+  const router = useRouter();
   const [forms, setForms] = useState<FormDefinition[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -61,7 +63,7 @@ export function useForms() {
         questions: [createQuestion("short_text")],
         ...actor,
       });
-      window.location.href = `/builder/${form.id}`;
+      router.push(`/builder/${form.id}`);
     } catch (err) {
       showToast(messageFromUnknown(err, MESSAGES.formCreateFailed), "error");
     }
@@ -105,7 +107,7 @@ export function useForms() {
     try {
       const form = await formsApi.create(templateCreatePayload(template, actor));
       flashToast("Created from template");
-      window.location.href = `/builder/${form.id}`;
+      router.push(`/builder/${form.id}`);
     } catch (err) {
       setCreatingTemplateId(null);
       showToast(messageFromUnknown(err, MESSAGES.formCreateFailed), "error");

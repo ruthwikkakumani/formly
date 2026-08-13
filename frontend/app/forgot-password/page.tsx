@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 
+import { BusyLabel } from "@/components/shared/BusyLabel";
 import { authApi } from "@/lib/api";
 import { MESSAGES, messageFromUnknown } from "@/lib/errors";
 import { isValidEmail } from "@/lib/validation";
@@ -77,8 +78,8 @@ export default function ForgotPasswordPage() {
             {message}
           </p>
         ) : null}
-        <button className="primary" type="submit" disabled={busy}>
-          {busy ? "Sending…" : "Send reset link"}
+        <button className={`primary${busy ? " is-busy" : ""}`} type="submit" disabled={busy}>
+          <BusyLabel busy={busy} idle="Send reset link" pending="Sending" />
         </button>
       </form>
       {resetUrl ? (

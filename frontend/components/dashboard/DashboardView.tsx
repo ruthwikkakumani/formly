@@ -1,12 +1,12 @@
 "use client";
 
+import { LayoutGroup, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { SlideThumb } from "@/components/shared/SlideThumb";
 import { Toast } from "@/components/shared/Toast";
 import { useForms } from "@/hooks/useForms";
+import { fadeDuration, paneEase, pillSpring, stagger, staggerDelay } from "@/lib/motion";
 import { FormDefinition, FormStatus } from "@/lib/types";
 import { FormCard } from "./FormCard";
 import { TemplatesGallery } from "./TemplatesGallery";
@@ -35,12 +35,12 @@ function filterForms(forms: FormDefinition[], query: string, status: StatusFilte
 export function DashboardView() {
   const workspace = useForms();
   const searchRef = useRef<HTMLInputElement>(null);
-  const filterRef = useRef<HTMLElement | null>(null);
+  const reduceMotion = useReducedMotion();
   const [tab, setTab] = useState<"forms" | "templates">("forms");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
   const [ready, setReady] = useState(false);
-  const statusIndex = STATUS_FILTERS.findIndex((option) => option.value === status);
+  const [cardsIn, setCardsIn] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,8 +66,7 @@ export function DashboardView() {
   );
 
   return (
-    <WorkspaceShell>
-      <main className={`dashboard${ready ? " is-in" : ""}`}>
+    <main className={`dashboard${ready ? " is-in" : ""}`}>
         <section className="dashhead">
           <div>
             <p className="eyebrow">MY WORKSPACE</p>
@@ -121,20 +120,28 @@ export function DashboardView() {
               </button>
             </label>
             {tab === "forms" ? (
-              <div ref={filterRef} className="dashfilter" role="group" aria-label="Filter by status">
-                <SlideThumb navRef={filterRef} index={Math.max(0, statusIndex)} className="dashfilter-thumb" />
-                {STATUS_FILTERS.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    data-thumb
-                    className={status === option.value ? "filteron" : ""}
-                    aria-pressed={status === option.value}
-                    onClick={() => setStatus(option.value)}
-                  >
-                    {option.label}
-                  </button>
-                ))}
+              <div className="dashfilter has-thumb" role="group" aria-label="Filter by status">
+                <LayoutGroup id="dashfilter-pill">
+                  {STATUS_FILTERS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={status === option.value ? "filteron" : ""}
+                      aria-pressed={status === option.value}
+                      onClick={() => setStatus(option.value)}
+                    >
+                      {status === option.value ? (
+                        <motion.span
+                          layoutId="dashfilter-active"
+                          className="dashfilter-thumb"
+                          transition={reduceMotion ? { duration: 0 } : pillSpring}
+                          aria-hidden="true"
+                        />
+                      ) : null}
+                      <span className="dashfilter-label">{option.label}</span>
+                    </button>
+                  ))}
+                </LayoutGroup>
               </div>
             ) : null}
           </div>
@@ -147,26 +154,51 @@ export function DashboardView() {
             onUse={workspace.createFromTemplate}
           />
         ) : workspace.loading ? (
-          <div className="empty">Loading your workspace…</div>
+          <section className="formgrid" aria-busy="true" aria-label="Loading forms">
+            {Array.from({ length: 6 }, (_, index) => (
+              <article className="formcard is-skel" key={index}>
+                <span className="skeleton skel-chip" />
+                <span className="skeleton skel-line skel-wide" />
+                <span className="skeleton skel-line" />
+                <span className="skeleton skel-line skel-short" />
+              </article>
+            ))}
+          </section>
         ) : workspace.error ? (
           <EmptyState title="We couldn't load your forms" body={workspace.error} />
         ) : workspace.forms.length === 0 ? (
           <EmptyState title="No forms yet" body="Create a form to start collecting responses." />
         ) : visibleForms.length ? (
-          <section className="formgrid">
+          <motion.section
+            className="formgrid"
+            initial={cardsIn || reduceMotion ? false : "hidden"}
+            animate="show"
+            variants={{
+              hidden: {},
+              show: { transition: { staggerChildren: stagger, delayChildren: staggerDelay } },
+            }}
+            onAnimationComplete={() => setCardsIn(true)}
+          >
             {visibleForms.map((form) => (
-              <FormCard
+              <motion.div
                 key={form.id}
-                form={form}
-                canEdit={workspace.canEdit}
-                onRename={workspace.renameForm}
-                onDuplicate={workspace.duplicateForm}
-                onPublish={workspace.togglePublish}
-                onDelete={workspace.deleteForm}
-                onCopyLink={workspace.copyLink}
-              />
+                variants={{
+                  hidden: { opacity: 0, y: 18 },
+                  show: { opacity: 1, y: 0, transition: { duration: fadeDuration, ease: paneEase } },
+                }}
+              >
+                <FormCard
+                  form={form}
+                  canEdit={workspace.canEdit}
+                  onRename={workspace.renameForm}
+                  onDuplicate={workspace.duplicateForm}
+                  onPublish={workspace.togglePublish}
+                  onDelete={workspace.deleteForm}
+                  onCopyLink={workspace.copyLink}
+                />
+              </motion.div>
             ))}
-          </section>
+          </motion.section>
         ) : (
           <EmptyState
             title="No matching forms"
@@ -174,7 +206,6 @@ export function DashboardView() {
           />
         )}
         <Toast {...workspace.toast} />
-      </main>
-    </WorkspaceShell>
+    </main>
   );
 }

@@ -1,13 +1,15 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
+import { BusyLabel } from "@/components/shared/BusyLabel";
 import { inviteApi } from "@/lib/api";
 import { setToken } from "@/lib/auth";
 import { MESSAGES, messageFromUnknown } from "@/lib/errors";
 
 export default function AcceptInvitePage() {
+  const router = useRouter();
   const params = useParams<{ token: string }>();
   const token = params.token;
   const [name, setName] = useState("");
@@ -34,7 +36,8 @@ export default function AcceptInvitePage() {
     try {
       const session = await inviteApi.accept(token, password);
       setToken(session.token);
-      window.location.href = "/";
+      router.push("/");
+      router.refresh();
     } catch (err) {
       setError(messageFromUnknown(err, MESSAGES.inviteAcceptFailed));
     } finally {
@@ -69,8 +72,8 @@ export default function AcceptInvitePage() {
                 {error}
               </p>
             ) : null}
-            <button className="primary" disabled={!email || busy} type="submit">
-              {busy ? "Joining…" : "Accept invite"}
+            <button className={`primary${busy ? " is-busy" : ""}`} disabled={!email || busy} type="submit">
+              <BusyLabel busy={busy} idle="Accept invite" pending="Joining" />
             </button>
           </form>
         </>

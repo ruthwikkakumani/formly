@@ -17,6 +17,8 @@ export function useBuilder(id: string, initialTab: "Build" | "Results" | "Settin
   const [editors, setEditors] = useState<FormEditor[]>([]);
   const [activity, setActivity] = useState<FormActivity[]>([]);
   const [dirty, setDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState("");
   const { toast, showToast } = useToast();
   const { actor, current } = useCurrentUser();
@@ -126,6 +128,7 @@ export function useBuilder(id: string, initialTab: "Build" | "Results" | "Settin
       showToast(MESSAGES.viewOnly, "error");
       return;
     }
+    setSaving(true);
     try {
       const saved = await formsApi.update(id, { ...form, ...actor });
       setForm(saved);
@@ -136,6 +139,8 @@ export function useBuilder(id: string, initialTab: "Build" | "Results" | "Settin
     } catch (err) {
       showToast(messageFromUnknown(err, MESSAGES.formSaveFailed), "error");
       throw err;
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -145,6 +150,7 @@ export function useBuilder(id: string, initialTab: "Build" | "Results" | "Settin
       showToast(MESSAGES.viewOnly, "error");
       return;
     }
+    setPublishing(true);
     try {
       if (dirtyRef.current) await save();
       const next = await formsApi.togglePublish(id, actor);
@@ -154,6 +160,8 @@ export function useBuilder(id: string, initialTab: "Build" | "Results" | "Settin
       showToast(form.status === "draft" ? "Your form is live" : "Form unpublished");
     } catch (err) {
       showToast(messageFromUnknown(err, MESSAGES.publishFailed), "error");
+    } finally {
+      setPublishing(false);
     }
   }
 
@@ -180,6 +188,8 @@ export function useBuilder(id: string, initialTab: "Build" | "Results" | "Settin
     current,
     readOnly,
     dirty,
+    saving,
+    publishing,
     change,
     changeQuestion,
     addQuestion,

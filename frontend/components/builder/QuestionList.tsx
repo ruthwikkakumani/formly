@@ -28,14 +28,14 @@ import { useRef, useState } from "react";
 import { QUESTION_TYPES } from "@/lib/constants";
 import { Question } from "@/lib/types";
 
-const LAYOUT_MS = 200;
+const LAYOUT_MS = 380;
 
 const animateLayoutChanges: AnimateLayoutChanges = (args) =>
   defaultAnimateLayoutChanges({ ...args, wasDragging: true });
 
 const dropAnimation: DropAnimation = {
   duration: LAYOUT_MS,
-  easing: "ease",
+  easing: "cubic-bezier(0.16, 1, 0.3, 1)",
   sideEffects: defaultDropAnimationSideEffects({
     styles: { active: { opacity: "0" } },
   }),
@@ -61,7 +61,7 @@ function SortableQuestion({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
     animateLayoutChanges,
-    transition: { duration: LAYOUT_MS, easing: "ease" },
+    transition: { duration: LAYOUT_MS, easing: "cubic-bezier(0.16, 1, 0.3, 1)" },
   });
 
   return (

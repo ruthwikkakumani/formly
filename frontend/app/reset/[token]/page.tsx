@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
+import { BusyLabel } from "@/components/shared/BusyLabel";
 import { authApi } from "@/lib/api";
 import { setToken } from "@/lib/auth";
 import { MESSAGES, messageFromUnknown } from "@/lib/errors";
 
 export default function ResetPasswordPage() {
+  const router = useRouter();
   const params = useParams<{ token: string }>();
   const token = params.token;
   const [email, setEmail] = useState("");
@@ -43,7 +45,8 @@ export default function ResetPasswordPage() {
     try {
       const session = await authApi.resetPassword(token, password);
       setToken(session.token);
-      window.location.href = "/";
+      router.push("/");
+      router.refresh();
     } catch (err) {
       setError(messageFromUnknown(err, MESSAGES.resetFailed));
     } finally {
@@ -103,8 +106,8 @@ export default function ResetPasswordPage() {
                 {error}
               </p>
             ) : null}
-            <button className="primary" type="submit" disabled={!email || busy}>
-              {busy ? "Updating…" : "Update password"}
+            <button className={`primary${busy ? " is-busy" : ""}`} type="submit" disabled={!email || busy}>
+              <BusyLabel busy={busy} idle="Update password" pending="Updating" />
             </button>
           </form>
           <p>

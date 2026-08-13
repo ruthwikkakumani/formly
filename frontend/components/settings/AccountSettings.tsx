@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 
+import { BusyLabel } from "@/components/shared/BusyLabel";
 import { Toast } from "@/components/shared/Toast";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useToast } from "@/hooks/useToast";
@@ -85,7 +86,13 @@ export function AccountSettings({ panel = "all" }: { panel?: "all" | "profile" |
   }
 
   if (!ready || !current) {
-    return <div className="loader">Loading account…</div>;
+    return (
+      <div className="settings-skel" aria-busy="true" aria-label="Loading account">
+        <span className="skeleton skel-line skel-short" />
+        <span className="skeleton skel-line" />
+        <span className="skeleton skel-block" />
+      </div>
+    );
   }
 
   return (
@@ -137,8 +144,8 @@ export function AccountSettings({ panel = "all" }: { panel?: "all" | "profile" |
               </p>
             ) : null}
             <div className="settings-card-actions">
-              <button className="primary" type="submit" disabled={savingName}>
-                {savingName ? "Saving…" : "Save details"}
+              <button className={`primary${savingName ? " is-busy" : ""}`} type="submit" disabled={savingName}>
+                <BusyLabel busy={savingName} idle="Save details" pending="Saving" />
               </button>
             </div>
           </form>
@@ -209,8 +216,8 @@ export function AccountSettings({ panel = "all" }: { panel?: "all" | "profile" |
               </p>
             ) : null}
             <div className="settings-card-actions">
-              <button className="primary" type="submit" disabled={savingPassword}>
-                {savingPassword ? "Updating…" : "Update password"}
+              <button className={`primary${savingPassword ? " is-busy" : ""}`} type="submit" disabled={savingPassword}>
+                <BusyLabel busy={savingPassword} idle="Update password" pending="Updating" />
               </button>
             </div>
           </form>

@@ -1,5 +1,8 @@
+import { LayoutGroup, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 
+import { BusyLabel } from "@/components/shared/BusyLabel";
+import { pillSpring } from "@/lib/motion";
 import { FormDefinition, FormEditor, WorkspaceMember } from "@/lib/types";
 
 const TABS = ["Build", "Results", "Settings"] as const;
@@ -10,6 +13,8 @@ export function BuilderHeader({
   editors,
   current,
   dirty,
+  saving = false,
+  publishing = false,
   readOnly = false,
   onTab,
   onTitle,
@@ -22,6 +27,8 @@ export function BuilderHeader({
   editors: FormEditor[];
   current?: WorkspaceMember | null;
   dirty: boolean;
+  saving?: boolean;
+  publishing?: boolean;
   readOnly?: boolean;
   onTab: (tab: "Build" | "Results" | "Settings") => void;
   onTitle: (title: string) => void;
@@ -29,6 +36,7 @@ export function BuilderHeader({
   onPublish: () => void;
   onCopyLink: () => void;
 }) {
+  const reduceMotion = useReducedMotion();
   const selfEmail = (current?.email || "").trim().toLowerCase();
   const others = selfEmail
     ? editors.filter((editor) => (editor.email || "").trim().toLowerCase() !== selfEmail)
@@ -37,10 +45,10 @@ export function BuilderHeader({
   return (
     <header className="builderhead">
       <div className="builderid">
-        <Link href="/" className="builderback" aria-label="Back to forms">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path d="M10 3.5 5.5 8 10 12.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+        <Link href="/" className="builderbrand" aria-label="formly home">
+          formly<span>•</span>
+        </Link>
+        <Link href="/" className="builderback">
           Forms
         </Link>
         <input
@@ -64,25 +72,40 @@ export function BuilderHeader({
           {dirty ? "Unsaved changes" : `Last saved by ${form.updated_by || "—"}`}
         </span>
       </div>
-      <nav className="buildertabs" aria-label="Builder sections">
-        {TABS.map((item) => (
-          <button
-            type="button"
-            className={tab === item ? "active" : ""}
-            aria-current={tab === item ? "page" : undefined}
-            onClick={() => onTab(item)}
-            key={item}
-          >
-            {item}
-          </button>
-        ))}
+      <nav className="buildertabs has-thumb" aria-label="Builder sections">
+        <LayoutGroup id="builder-tabs">
+          {TABS.map((item) => (
+            <button
+              type="button"
+              className={tab === item ? "active" : ""}
+              aria-current={tab === item ? "page" : undefined}
+              onClick={() => onTab(item)}
+              key={item}
+            >
+              {tab === item ? (
+                <motion.span
+                  layoutId="builder-tab-active"
+                  className="buildertabs-thumb"
+                  transition={reduceMotion ? { duration: 0 } : pillSpring}
+                  aria-hidden="true"
+                />
+              ) : null}
+              <span className="buildertabs-label">{item}</span>
+            </button>
+          ))}
+        </LayoutGroup>
       </nav>
       <div className="builderactions">
         {readOnly ? (
           <span className="livepill viewonly">View only</span>
         ) : (
-          <button type="button" className={`btnsave${dirty ? " is-dirty" : ""}`} onClick={onSave} disabled={!dirty}>
-            Save
+          <button
+            type="button"
+            className={`btnsave${dirty ? " is-dirty" : ""}${saving ? " is-busy" : ""}`}
+            onClick={onSave}
+            disabled={!dirty || saving}
+          >
+            <BusyLabel busy={saving} idle="Save" pending="Saving" />
           </button>
         )}
         {form.status === "published" && (
@@ -99,8 +122,12 @@ export function BuilderHeader({
           </button>
         )}
         {readOnly ? null : (
-          <button type="button" className="primary" onClick={onPublish}>
-            {form.status === "draft" ? "Publish" : "Unpublish"}
+          <button type="button" className={`primary${publishing ? " is-busy" : ""}`} onClick={onPublish} disabled={publishing}>
+            <BusyLabel
+              busy={publishing}
+              idle={form.status === "draft" ? "Publish" : "Unpublish"}
+              pending={form.status === "draft" ? "Publishing" : "Unpublishing"}
+            />
           </button>
         )}
       </div>

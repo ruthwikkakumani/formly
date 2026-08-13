@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
+import { BusyLabel } from "@/components/shared/BusyLabel";
 import { authApi } from "@/lib/api";
 import { setToken } from "@/lib/auth";
 import { MESSAGES, messageFromUnknown } from "@/lib/errors";
@@ -12,6 +14,7 @@ const REVIEWER_EMAIL = process.env.NEXT_PUBLIC_REVIEWER_EMAIL || "reviewer@forml
 const REVIEWER_PASSWORD = process.env.NEXT_PUBLIC_REVIEWER_PASSWORD || "FormlyReview1";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -34,7 +37,8 @@ export default function LoginPage() {
     try {
       const session = await authApi.login({ email, password });
       setToken(session.token);
-      window.location.href = "/";
+      router.push("/");
+      router.refresh();
     } catch (err) {
       setError(messageFromUnknown(err, MESSAGES.signInFailed));
     } finally {
@@ -65,8 +69,8 @@ export default function LoginPage() {
             {error}
           </p>
         ) : null}
-        <button className="primary" type="submit" disabled={busy}>
-          {busy ? "Signing in…" : "Sign in"}
+        <button className={`primary${busy ? " is-busy" : ""}`} type="submit" disabled={busy}>
+          <BusyLabel busy={busy} idle="Sign in" pending="Signing in" />
         </button>
       </form>
       <aside className="reviewer-note">

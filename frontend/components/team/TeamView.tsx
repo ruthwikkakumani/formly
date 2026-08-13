@@ -2,6 +2,8 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
+import { BusyLabel } from "@/components/shared/BusyLabel";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Toast } from "@/components/shared/Toast";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useToast } from "@/hooks/useToast";
@@ -33,6 +35,9 @@ export function TeamView({ embedded = false }: { embedded?: boolean }) {
   const [copied, setCopied] = useState(false);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
+  const [sentOk, setSentOk] = useState(false);
+  const [pendingRemove, setPendingRemove] = useState<WorkspaceMember | null>(null);
+  const [removing, setRemoving] = useState(false);
   const { toast, showToast } = useToast();
 
   const total = members.length;
@@ -91,10 +96,12 @@ export function TeamView({ embedded = false }: { embedded?: boolean }) {
     const trimmedEmail = email.trim();
     if (!trimmedName) {
       setFormError(MESSAGES.missingName);
+      showToast(MESSAGES.missingName, "error");
       return;
     }
     if (!isValidEmail(trimmedEmail)) {
       setFormError(MESSAGES.invalidEmail);
+      showToast(MESSAGES.invalidEmail, "error");
       return;
     }
     setFormError("");
@@ -105,6 +112,8 @@ export function TeamView({ embedded = false }: { embedded?: boolean }) {
       setEmail("");
       setShareLink(result.accept_url);
       setCopied(false);
+      setSentOk(true);
+      window.setTimeout(() => setSentOk(false), 1600);
       showToast(result.message || "Invite created");
       await load();
       const invitedEmail = trimmedEmail.toLowerCase();
@@ -207,8 +216,14 @@ export function TeamView({ embedded = false }: { embedded?: boolean }) {
             <option value="editor">Editor</option>
             <option value="viewer">Viewer</option>
           </select>
-          <button className="primary" type="submit" disabled={sending}>
-            {sending ? "Sending…" : "Send invite"}
+          <button className={`primary${sending || sentOk ? " is-busy" : ""}`} type="submit" disabled={sending || sentOk}>
+            <BusyLabel
+              busy={sending}
+              done={sentOk}
+              idle="Send invite"
+              pending="Sending"
+              success="Invite sent"
+            />
           </button>
           {formError ? (
             <p className="autherr" role="alert">
@@ -302,6 +317,14 @@ export function TeamView({ embedded = false }: { embedded?: boolean }) {
             </button>
           </p>
         ) : null}
+        {!loadError && !membersReady ? (
+          <div className="memberTable is-skel" aria-busy="true" aria-label="Loading members">
+            <span className="skeleton skel-line skel-wide" />
+            <span className="skeleton skel-line" />
+            <span className="skeleton skel-line" />
+            <span className="skeleton skel-line skel-short" />
+          </div>
+        ) : null}
         {!loadError && membersReady && members.length === 0 ? (
           <p className="memberTableEmpty">No teammates to show yet.</p>
         ) : null}
@@ -345,15 +368,7 @@ export function TeamView({ embedded = false }: { embedded?: boolean }) {
                             <button
                               className="member-remove"
                               type="button"
-                              onClick={async () => {
-                                try {
-                                  await teamApi.remove(member.id);
-                                  showToast("Member removed");
-                                  await load();
-                                } catch (error) {
-                                  showToast(messageFromUnknown(error, MESSAGES.memberRemoveFailed), "error");
-                                }
-                              }}
+                              onClick={() => setPendingRemove(member)}
                             >
                               Remove
                             </button>
@@ -379,6 +394,33 @@ export function TeamView({ embedded = false }: { embedded?: boolean }) {
           </>
         ) : null}
       </div>
+      {pendingRemove ? (
+        <ConfirmDialog
+          title="Remove this teammate?"
+          body={`${pendingRemove.name} will lose access to this workspace. They can be invited again later.`}
+          confirmLabel="Remove"
+          pendingLabel="Removing"
+          busy={removing}
+          onClose={() => {
+            if (!removing) setPendingRemove(null);
+          }}
+          onConfirm={() => {
+            void (async () => {
+              setRemoving(true);
+              try {
+                await teamApi.remove(pendingRemove.id);
+                showToast("Member removed");
+                setPendingRemove(null);
+                await load();
+              } catch (error) {
+                showToast(messageFromUnknown(error, MESSAGES.memberRemoveFailed), "error");
+              } finally {
+                setRemoving(false);
+              }
+            })();
+          }}
+        />
+      ) : null}
       <Toast {...toast} />
     </section>
   );

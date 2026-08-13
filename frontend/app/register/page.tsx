@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
+import { BusyLabel } from "@/components/shared/BusyLabel";
 import { authApi } from "@/lib/api";
 import { setToken } from "@/lib/auth";
 import { MESSAGES, messageFromUnknown } from "@/lib/errors";
 import { isValidEmail } from "@/lib/validation";
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,7 +33,8 @@ export default function RegisterPage() {
     try {
       const session = await authApi.register({ name: name.trim(), email, password });
       setToken(session.token);
-      window.location.href = "/";
+      router.push("/");
+      router.refresh();
     } catch (err) {
       setError(messageFromUnknown(err, MESSAGES.registerFailed));
     } finally {
@@ -62,8 +66,8 @@ export default function RegisterPage() {
             {error}
           </p>
         ) : null}
-        <button className="primary" type="submit" disabled={busy}>
-          {busy ? "Creating…" : "Create account"}
+        <button className={`primary${busy ? " is-busy" : ""}`} type="submit" disabled={busy}>
+          <BusyLabel busy={busy} idle="Create account" pending="Creating" />
         </button>
       </form>
       <p>

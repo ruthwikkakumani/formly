@@ -8,7 +8,6 @@ export function QuestionScreen({
   value,
   error,
   slug,
-  direction,
   onChange,
   onNext,
   onBack,
@@ -18,13 +17,12 @@ export function QuestionScreen({
   value: string;
   error: string;
   slug: string;
-  direction: "up" | "down";
   onChange: (value: string) => void;
   onNext: () => void;
   onBack: () => void;
 }) {
   return (
-    <div className={`ask ${direction}`} key={question.id ?? index}>
+    <div className="ask">
       <h1>
         <em style={{ color: "var(--accent, #0445af)" }}>{index + 1} →</em>
         {question.title}

@@ -1,13 +1,14 @@
 "use client";
 
+import { LayoutGroup, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useRef, useState } from "react";
 
-import { SlideThumb } from "@/components/shared/SlideThumb";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { getToken } from "@/lib/auth";
 import { MESSAGES } from "@/lib/errors";
+import { pillSpring } from "@/lib/motion";
 
 function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -26,17 +27,13 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const [isNarrow, setIsNarrow] = useState(false);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
-  const navRef = useRef<HTMLElement>(null);
+  const reduceMotion = useReducedMotion();
 
   const links = [
     { href: "/", label: "Home", on: path === "/" },
     { href: "/team", label: "Workspace", on: path === "/team" || path.startsWith("/team/") },
     { href: "/settings", label: "Settings", on: path === "/settings" || path.startsWith("/settings/") },
   ];
-  const navIndex = Math.max(
-    0,
-    links.findIndex((link) => link.on),
-  );
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 900px)");
@@ -138,13 +135,22 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             <span aria-hidden="true">×</span>
           </button>
         </div>
-        <nav ref={navRef} className="sidenav-links">
-          <SlideThumb navRef={navRef} index={navIndex} axis="y" className="sidenav-thumb" />
-          {links.map((link) => (
-            <Link key={link.href} href={link.href} data-thumb className={link.on ? "navon" : ""}>
-              {link.label}
-            </Link>
-          ))}
+        <nav className="sidenav-links">
+          <LayoutGroup id="sidenav-pill">
+            {links.map((link) => (
+              <Link key={link.href} href={link.href} className={link.on ? "navon" : ""}>
+                {link.on ? (
+                  <motion.span
+                    layoutId="sidenav-active"
+                    className="sidenav-thumb"
+                    transition={reduceMotion ? { duration: 0 } : pillSpring}
+                    aria-hidden="true"
+                  />
+                ) : null}
+                <span className="sidenav-label">{link.label}</span>
+              </Link>
+            ))}
+          </LayoutGroup>
         </nav>
         <div className="sidecard">
           <div className="sidecard-user">

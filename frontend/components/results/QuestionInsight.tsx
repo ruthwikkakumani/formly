@@ -65,55 +65,64 @@ function numericAverage(questionId: number, responses: FormResponse[]) {
   return Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10;
 }
 
-function ChoiceBars({ rows, total }: { rows: Array<{ label: string; count: number }>; total: number }) {
-  if (!rows.length) return <p className="insightEmpty">No options yet</p>;
-  return (
-    <ul className="insightList choiceBars">
-      {rows.map((row) => {
-        const pct = percent(row.count, total);
-        return (
-          <li key={row.label}>
-            <div className="choiceMeta">
-              <span title={row.label}>{row.label}</span>
-              <small>
-                {row.count} · {pct}%
-              </small>
-            </div>
-            <div
-              className="choiceTrack"
-              role="img"
-              aria-label={`${row.label}: ${row.count} (${pct}%)`}
-            >
-              <span style={{ width: `${pct}%` }} />
-            </div>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
+const CHART_COLORS = ["#ff6d5a", "#191919", "#c4b49a", "#6f6f6c", "#e8b86d", "#5f7a6a", "#8a6a58"];
 
-function YesNoBar({ yes, no, total }: { yes: number; no: number; total: number }) {
-  if (!total) {
-    return (
-      <div className="seg segEmpty" aria-label="No yes or no answers yet">
-        <span>Yes 0</span>
-        <span>No 0</span>
-      </div>
-    );
-  }
+function ChoiceChart({ rows, total }: { rows: Array<{ label: string; count: number }>; total: number }) {
+  if (!rows.length) return <p className="insightEmpty">No options yet</p>;
+  const radius = 36;
+  const circ = 2 * Math.PI * radius;
+  let offset = 0;
+  const slices = rows.map((row, index) => {
+    const length = total ? (row.count / total) * circ : 0;
+    const slice = {
+      ...row,
+      color: CHART_COLORS[index % CHART_COLORS.length],
+      dash: `${length} ${Math.max(0, circ - length)}`,
+      offset,
+      pct: percent(row.count, total),
+    };
+    offset -= length;
+    return slice;
+  });
+
   return (
-    <div className="seg" role="img" aria-label={`Yes ${yes}, No ${no}`}>
-      {yes > 0 ? (
-        <span className="segyes" style={{ flexGrow: yes, flexBasis: 0 }}>
-          Yes {yes} · {percent(yes, total)}%
-        </span>
-      ) : null}
-      {no > 0 ? (
-        <span className="segno" style={{ flexGrow: no, flexBasis: 0 }}>
-          No {no} · {percent(no, total)}%
-        </span>
-      ) : null}
+    <div className="choiceChart">
+      <div className="choiceDonutWrap" role="img" aria-label={slices.map((row) => `${row.label} ${row.pct}%`).join(", ")}>
+        <svg viewBox="0 0 100 100" className="choiceDonut" aria-hidden="true">
+          <circle cx="50" cy="50" r={radius} fill="none" stroke="#f1efe8" strokeWidth="14" />
+          {slices.map((slice) =>
+            slice.count ? (
+              <circle
+                key={slice.label}
+                cx="50"
+                cy="50"
+                r={radius}
+                fill="none"
+                stroke={slice.color}
+                strokeWidth="14"
+                strokeDasharray={slice.dash}
+                strokeDashoffset={slice.offset}
+                transform="rotate(-90 50 50)"
+              />
+            ) : null,
+          )}
+        </svg>
+        <div className="choiceDonutCenter">
+          <strong>{total}</strong>
+          <small>{total === 1 ? "answer" : "answers"}</small>
+        </div>
+      </div>
+      <ul className="insightList choiceLegend">
+        {slices.map((row) => (
+          <li key={row.label}>
+            <i style={{ background: row.color }} aria-hidden="true" />
+            <span title={row.label}>{row.label}</span>
+            <small>
+              {row.count} · {row.pct}%
+            </small>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -196,11 +205,19 @@ export function QuestionInsight({
   const total = stat.responses;
   let body: ReactNode;
   if (stat.type === "yes_no") {
-    body = <YesNoBar yes={stat.counts.Yes || 0} no={stat.counts.No || 0} total={total} />;
+    body = (
+      <ChoiceChart
+        rows={[
+          { label: "Yes", count: stat.counts.Yes || 0 },
+          { label: "No", count: stat.counts.No || 0 },
+        ]}
+        total={total}
+      />
+    );
   } else if (stat.type === "rating") {
     body = <RatingChart counts={stat.counts} total={total} />;
   } else if (CHOICE_TYPES.has(stat.type)) {
-    body = <ChoiceBars rows={choiceRows(stat, question)} total={total} />;
+    body = <ChoiceChart rows={choiceRows(stat, question)} total={total} />;
   } else {
     body = (
       <OpenAnswers

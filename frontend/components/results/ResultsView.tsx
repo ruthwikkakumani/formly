@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { BusyLabel } from "@/components/shared/BusyLabel";
 import { Toast } from "@/components/shared/Toast";
 import { formsApi } from "@/lib/api";
 import { MESSAGES, messageFromUnknown } from "@/lib/errors";
@@ -26,6 +27,7 @@ export function ResultsView({ id, questions }: { id: string; questions: Question
   const [stats, setStats] = useState<FormStats>();
   const [open, setOpen] = useState<FormResponse>();
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const { toast, showToast } = useToast();
 
   useEffect(() => {
@@ -67,20 +69,38 @@ export function ResultsView({ id, questions }: { id: string; questions: Question
           </div>
         </div>
         <button
-          className="save"
+          className={`save${exporting ? " is-busy" : ""}`}
           type="button"
-          onClick={() =>
+          disabled={exporting}
+          onClick={() => {
+            setExporting(true);
             void formsApi
               .exportCsv(id)
               .then(() => showToast("CSV downloaded"))
               .catch((err: unknown) => showToast(messageFromUnknown(err, MESSAGES.exportFailed), "error"))
-          }
+              .finally(() => setExporting(false));
+          }}
         >
-          Export CSV
+          <BusyLabel busy={exporting} idle="Export CSV" pending="Exporting" />
         </button>
       </div>
       {loading ? (
-        <p className="resultsHint">Loading responses…</p>
+        <div className="results-skel" aria-busy="true" aria-label="Loading responses">
+          <div className="stats">
+            {Array.from({ length: 3 }, (_, index) => (
+              <article className="insight is-skel" key={index}>
+                <span className="skeleton skel-line skel-short" />
+                <span className="skeleton skel-block" />
+              </article>
+            ))}
+          </div>
+          <div className="responseTable is-skel">
+            <span className="skeleton skel-line skel-wide" />
+            <span className="skeleton skel-line" />
+            <span className="skeleton skel-line" />
+            <span className="skeleton skel-line skel-short" />
+          </div>
+        </div>
       ) : (
         <>
           <StatsStrip stats={insights} questions={questions} responses={responses} />

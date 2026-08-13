@@ -11,8 +11,8 @@
   --ok: #191919;
   --danger: #c54444;
   --shadow: 0 1px 2px #0000000a, 0 8px 24px #00000008;
-  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --motion: 200ms var(--motion-ease);
+  --motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion: 420ms var(--motion-ease);
   --motion-props: color var(--motion), background-color var(--motion),
     border-color var(--motion), box-shadow var(--motion), transform var(--motion),
     opacity var(--motion);
@@ -28,7 +28,7 @@ html {
 
 .smooth-height {
   overflow: hidden;
-  transition: height 280ms var(--motion-ease);
+  transition: height 480ms var(--motion-ease);
 }
 
 
@@ -75,6 +75,14 @@ button {
 
 a {
   color: inherit;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([readonly]):not(.titleinput):focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px #19191914;
 }
 
 button,
@@ -132,11 +140,82 @@ textarea,
 
 .primary,
 .save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   background: var(--ok);
   color: white;
   border-radius: 8px;
   padding: 11px 16px;
   font-weight: 600;
+}
+
+.btnspin {
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+.btncheck {
+  display: block;
+  flex-shrink: 0;
+}
+
+.confirm-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--ink);
+  color: #fff !important;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.confirm-danger:hover:not(:disabled) {
+  background: #2c2c2c;
+}
+
+.confirm-danger:disabled {
+  opacity: 0.7;
+}
+
+.skeleton {
+  display: block;
+  height: 12px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #ecece8 0%, #f7f6f3 46%, #ecece8 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease infinite;
+}
+
+.skel-line {
+  height: 12px;
+  width: 72%;
+}
+
+.skel-short {
+  width: 42%;
+}
+
+.skel-wide {
+  width: 88%;
+}
+
+.skel-chip {
+  width: 64px;
+  height: 18px;
+  border-radius: 999px;
+}
+
+.skel-block {
+  width: 100%;
+  height: 72px;
+  margin-top: 8px;
 }
 
 .save {
@@ -288,7 +367,7 @@ textarea,
 @keyframes up {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
@@ -320,6 +399,43 @@ textarea,
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+@keyframes pane-in {
+  from {
+    opacity: 0;
+    transform: translateX(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pane-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
@@ -360,5 +476,9 @@ textarea,
   *::after {
     transition: none !important;
     animation: none !important;
+  }
+
+  .skeleton {
+    background: #ecece8;
   }
 }

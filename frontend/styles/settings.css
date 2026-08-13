@@ -131,7 +131,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .settings-nav-thumb {
+  .settings-nav-thumb,
+  .settings-pane.is-on {
     transition: none;
+    animation: none;
   }
 }

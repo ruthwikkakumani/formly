@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { LayoutGroup, motion, useReducedMotion } from "framer-motion";
+import { useEffect, useState } from "react";
 
 import { AccountSettings } from "@/components/settings/AccountSettings";
 import { SmoothHeight } from "@/components/shared/SmoothHeight";
 import { TeamView } from "@/components/team/TeamView";
+import { paneDuration, paneEase, pillSpring } from "@/lib/motion";
 
 const SECTIONS = ["account", "password", "team"] as const;
 type SettingsSection = (typeof SECTIONS)[number];
@@ -38,8 +40,8 @@ const LABELS: Record<SettingsSection, string> = {
 
 export function SettingsWorkspace() {
   const [section, setSection] = useState<SettingsSection>("account");
-  const navRef = useRef<HTMLElement>(null);
-  const [thumb, setThumb] = useState({ xs: [0, 0, 0], ws: [0, 0, 0], ready: false });
+  const [from, setFrom] = useState(0);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     setSection(sectionFromHash());
@@ -48,42 +50,16 @@ export function SettingsWorkspace() {
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
-  useLayoutEffect(() => {
-    const nav = navRef.current;
-    if (!nav) return;
-
-    const measure = () => {
-      const buttons = Array.from(nav.querySelectorAll("button"));
-      if (buttons.length !== SECTIONS.length) return;
-      const xs = buttons.map((button) => button.offsetLeft);
-      const ws = buttons.map((button) => button.offsetWidth);
-      setThumb((prev) => {
-        if (
-          prev.ready &&
-          prev.xs.every((value, i) => value === xs[i]) &&
-          prev.ws.every((value, i) => value === ws[i])
-        ) {
-          return prev;
-        }
-        return { xs, ws, ready: true };
-      });
-    };
-
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(nav);
-    nav.querySelectorAll("button").forEach((button) => observer.observe(button));
-    return () => observer.disconnect();
-  }, []);
-
   function show(next: SettingsSection) {
     if (next === section) return;
+    setFrom(SECTIONS.indexOf(section));
     setSection(next);
     window.history.replaceState(null, "", `#${next}`);
   }
 
   const copy = COPY[section];
   const index = SECTIONS.indexOf(section);
+  const dir = index >= from ? 1 : -1;
 
   return (
     <div className={`settings-page${section === "team" ? " settings-page-wide" : ""}`}>
@@ -93,38 +69,58 @@ export function SettingsWorkspace() {
             <p className="eyebrow">{copy.eyebrow}</p>
             <h1>Settings</h1>
           </div>
-          <nav
-            ref={navRef}
-            className={`settings-nav${thumb.ready ? " has-thumb" : ""}`}
-            aria-label="Settings sections"
-          >
-            {thumb.ready ? (
-              <span
-                className="settings-nav-thumb"
-                aria-hidden="true"
-                style={{ width: thumb.ws[index], transform: `translateX(${thumb.xs[index]}px)` }}
-              />
-            ) : null}
-            {SECTIONS.map((item) => (
-              <button
-                key={item}
-                type="button"
-                className={section === item ? "tabon" : ""}
-                aria-current={section === item ? "page" : undefined}
-                onClick={() => show(item)}
-              >
-                {LABELS[item]}
-              </button>
-            ))}
+          <nav className="settings-nav has-thumb" aria-label="Settings sections">
+            <LayoutGroup id="settings-pill">
+              {SECTIONS.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className={section === item ? "tabon" : ""}
+                  aria-current={section === item ? "page" : undefined}
+                  onClick={() => show(item)}
+                >
+                  {section === item ? (
+                    <motion.span
+                      layoutId="settings-active"
+                      className="settings-nav-thumb"
+                      transition={reduceMotion ? { duration: 0 } : pillSpring}
+                      aria-hidden="true"
+                    />
+                  ) : null}
+                  <span className="settings-nav-label">{LABELS[item]}</span>
+                </button>
+              ))}
+            </LayoutGroup>
           </nav>
         </div>
         <p className="lede">{copy.lede}</p>
       </header>
       <SmoothHeight>
         <div className="settings-switch">
-          {section === "account" ? <AccountSettings panel="profile" /> : null}
-          {section === "password" ? <AccountSettings panel="password" /> : null}
-          {section === "team" ? <TeamView embedded /> : null}
+          {SECTIONS.map((item, paneIndex) => {
+            const on = paneIndex === index;
+            return (
+              <motion.div
+                key={item}
+                className={`settings-pane${on ? " is-on" : " is-off"}`}
+                aria-hidden={!on}
+                initial={false}
+                animate={
+                  reduceMotion
+                    ? { opacity: on ? 1 : 0, x: 0 }
+                    : {
+                        opacity: on ? 1 : 0,
+                        x: on ? 0 : dir * (paneIndex < index ? -28 : 28),
+                      }
+                }
+                transition={{ duration: paneDuration, ease: paneEase }}
+              >
+                {item === "account" ? <AccountSettings panel="profile" /> : null}
+                {item === "password" ? <AccountSettings panel="password" /> : null}
+                {item === "team" ? <TeamView embedded /> : null}
+              </motion.div>
+            );
+          })}
         </div>
       </SmoothHeight>
     </div>
