@@ -2,7 +2,7 @@
 
 **GitHub (public):** [https://github.com/ruthwikkakumani/formly](https://github.com/ruthwikkakumani/formly)
 
-Formly clones Typeform’s workspace, builder, and conversational one-question-at-a-time fill flow. Creators build and publish forms; anyone with the link can respond without logging in. Results, themes, webhooks, team invites, and bonus question types are included.
+Formly clones Typeform’s workspace, builder, and conversational one-question-at-a-time fill flow. Creators build and publish forms; anyone with the link can respond without logging in. Results, themes, webhooks, team invites, live “who is editing”, save history, and bonus question types are included.
 
 The repository contains `frontend/` and `backend/` as required by the assignment. Seeded published forms load on first API start so the app is usable immediately.
 
@@ -61,15 +61,15 @@ formly/
 │   └── app/
 │       ├── core/         config, constants
 │       ├── db/           engine, session
-│       ├── models/       Form, Question, Response, Answer, Partial, Member
+│       ├── models/       Form, Question, Response, Answer, Partial, Member, Presence, Activity
 │       ├── schemas/      Pydantic DTOs
 │       ├── repositories/ SQL access
-│       ├── services/     rules, validation, seed, webhooks
-│       └── api/routes/   forms, public, team, health
+│       ├── services/     rules, validation, seed, webhooks, collaboration
+│       └── api/routes/   forms, public, team, health, presence
 └── frontend/
     ├── app/              thin routes: /, /builder/[id], /f/[slug], /team
     ├── components/       dashboard, builder, results, settings, respondent, team
-    ├── hooks/            useForms, useBuilder, useRespondent
+    ├── hooks/            useForms, useBuilder, useRespondent, useCurrentUser
     ├── lib/              api, types, validation
     └── styles/           per-surface CSS
 ```
@@ -81,6 +81,8 @@ erDiagram
   forms ||--|{ questions : has
   forms ||--o{ responses : collects
   forms ||--o{ partial_responses : tracks
+  forms ||--o{ form_presence : editors
+  forms ||--o{ form_activity : history
   responses ||--|{ answers : contains
   questions ||--o{ answers : answered_as
 
@@ -88,6 +90,7 @@ erDiagram
     int id PK
     string slug UK
     string status
+    string updated_by
     json theme
   }
   questions {
@@ -115,13 +118,14 @@ Saving a form updates questions by id so historical answers are kept. Full colum
 - `GET/POST /api/forms` · `GET/PUT/PATCH/DELETE /api/forms/{id}`
 - `POST /api/forms/{id}/duplicate` · `POST /api/forms/{id}/publish`
 - `GET /api/forms/{id}/responses` · `GET /api/forms/{id}/stats` · `GET /api/forms/{id}/responses.csv`
+- `POST/GET /api/forms/{id}/presence` · `GET /api/forms/{id}/activity`
 - `GET /api/public/{slug}` · `POST /api/public/{slug}/responses|partial|upload`
 - `GET/POST /api/workspace/members` · `DELETE /api/workspace/members/{id}`
 - `GET /api/health`
 
 ## Features
 
-Builder, CRUD, publish/share, conversational fill (keyboard + progress + validation), results + CSV, themes (colors, fonts, background, dark mode), thank-you copy, logic jumps, file upload, payments, webhooks, workspace collaboration, seeded published forms.
+Builder, CRUD, publish/share, conversational fill (keyboard + progress + validation), results + CSV, themes (colors, fonts, background, dark mode), thank-you copy, logic jumps, file upload, payments, webhooks, workspace collaboration, **live who-is-editing + save history**, seeded published forms.
 
 ## Assumptions
 
@@ -129,6 +133,7 @@ Builder, CRUD, publish/share, conversational fill (keyboard + progress + validat
 - Payments record a successful pay action in the response (no live Stripe keys).
 - Webhooks POST JSON on submit; a down endpoint does not fail the response.
 - Team invites are stored in the workspace (no outbound email provider).
+- Live collab uses presence heartbeats (not WebSockets). Identity is a per-tab workspace member because real login is optional in the brief.
 
 ## Demo / deployment
 

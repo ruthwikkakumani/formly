@@ -11,6 +11,8 @@ classDiagram
     +str status
     +str slug
     +str webhook_url
+    +str updated_by
+    +str updated_by_email
     +dict theme
     +datetime created_at
     +datetime updated_at
@@ -51,9 +53,27 @@ classDiagram
     +str role
     +datetime created_at
   }
+  class FormPresence {
+    +int id
+    +int form_id
+    +str name
+    +str email
+    +datetime last_seen
+  }
+  class FormActivity {
+    +int id
+    +int form_id
+    +str actor_name
+    +str actor_email
+    +str action
+    +str detail
+    +datetime created_at
+  }
   Form "1" --> "*" Question : questions
   Form "1" --> "*" Response : responses
   Form "1" --> "*" PartialResponse : partials
+  Form "1" --> "*" FormPresence : editors
+  Form "1" --> "*" FormActivity : history
   Response "1" --> "*" Answer : answers
   Question "1" --> "*" Answer : answers
 ```
@@ -77,8 +97,15 @@ classDiagram
     +create(db, payload)
     +update(db, id, payload)
     +duplicate(db, id)
-    +toggle_publish(db, id)
+    +toggle_publish(db, id, actor)
     -_sync_questions(db, form, payload)
+    -_stamp(form, name, email)
+  }
+  class CollaborationService {
+    +heartbeat(db, form_id, name, email)
+    +active_editors(db, form_id)
+    +log(db, form_id, action, name, email)
+    +history(db, form_id)
   }
   class ResponseService {
     +submit(db, slug, payload)
@@ -92,6 +119,7 @@ classDiagram
     +remove(db, id)
   }
   FormService --> FormRepository
+  FormService --> CollaborationService
   ResponseService --> FormService
   ResponseService --> ResponseRepository
 ```
@@ -104,17 +132,22 @@ classDiagram
   class BuilderView
   class PublicFormView
   class TeamView
+  class ActivityLog
   class useForms
   class useBuilder
   class useRespondent
+  class useCurrentUser
   class formsApi
   class publicFormsApi
   class teamApi
   DashboardView --> useForms
+  DashboardView --> useCurrentUser
   BuilderView --> useBuilder
+  BuilderView --> ActivityLog
   PublicFormView --> useRespondent
   TeamView --> teamApi
   useForms --> formsApi
   useBuilder --> formsApi
+  useBuilder --> useCurrentUser
   useRespondent --> publicFormsApi
 ```

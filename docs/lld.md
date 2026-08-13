@@ -26,11 +26,12 @@ Public fill never touches creator-only screens. It only calls `/api/public/{slug
 
 | Module | Responsibility |
 |---|---|
-| `FormService` | create, update (sync questions by id), rename, duplicate, publish toggle, serialize |
+| `FormService` | create, update (sync questions by id), rename, duplicate, publish toggle, stamp `updated_by`, serialize |
 | `ResponseService` | submit, partial save, stats, CSV rows, file upload |
 | `validation_service` | required / email / number / choice / payment; logic-jump path walk |
 | `webhook_service` | fire-and-forget POST on submit |
 | `TeamService` | invite / list / remove workspace members |
+| `CollaborationService` | presence heartbeat, active editors, activity log |
 | `seed.py` | two published forms + responses + owner/editor members |
 
 **Question sync rule:** `PUT /api/forms/{id}` does **not** delete-all-and-recreate. Existing question IDs are updated in place so historical `answers.question_id` stay valid.
@@ -41,10 +42,12 @@ Public fill never touches creator-only screens. It only calls `/api/public/{slug
 
 | Hook | Screen | API |
 |---|---|---|
-| `useForms` | dashboard | list, create, rename, duplicate, publish, delete |
-| `useBuilder` | `/builder/[id]` | get, update, publish |
+| `useCurrentUser` | sidebar + builder | pick teammate identity (per tab) |
+| `useForms` | dashboard | list, create, rename, duplicate, publish, delete + actor |
+| `useBuilder` | `/builder/[id]` | get, update, publish, heartbeat, poll remote saves |
 | `useRespondent` | `/f/[slug]` | public get, partial, submit, upload |
 | TeamView | `/team` | members CRUD |
+| ActivityLog | Settings tab | who saved / published / renamed |
 
 Builder tabs: **Build** (list + canvas + settings) · **Results** · **Settings**.
 
@@ -67,6 +70,9 @@ Respondent steps: `loading → welcome → question* → thanks | error`.
 | GET | `/api/forms/{id}/responses` | table |
 | GET | `/api/forms/{id}/stats` | counts + completion |
 | GET | `/api/forms/{id}/responses.csv` | export |
+| POST | `/api/forms/{id}/presence` | I am editing (heartbeat) |
+| GET | `/api/forms/{id}/presence` | who is editing now |
+| GET | `/api/forms/{id}/activity` | who saved / modified |
 
 ### Public (no auth)
 
@@ -92,7 +98,7 @@ Logic jumps apply to choice / yes-no / dropdown: a list of `{ option, target_id,
 
 ## 7. Persistence
 
-SQLite file `backend/typeform.db`. JSON columns: `theme`, `options`, `logic`, partial `answers`. Cascades: deleting a form deletes questions, responses, answers, partials.
+SQLite file `backend/typeform.db`. JSON columns: `theme`, `options`, `logic`, partial `answers`. Cascades: deleting a form deletes questions, responses, answers, partials, presence, and activity.
 
 ## 8. Auth assumption
 

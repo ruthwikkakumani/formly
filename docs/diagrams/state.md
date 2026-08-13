@@ -43,3 +43,27 @@ stateDiagram-v2
 ```
 
 Logic jump targets only include questions that already have an `id` (saved once).
+
+## Editor presence
+
+```mermaid
+stateDiagram-v2
+  [*] --> Offline
+  Offline --> Active: POST /presence
+  Active --> Active: heartbeat every 4s
+  Active --> Stale: no heartbeat for 20s
+  Stale --> [*]: row deleted
+  Active --> [*]: leave builder
+```
+
+## Builder local draft vs remote
+
+```mermaid
+stateDiagram-v2
+  [*] --> Clean: GET form
+  Clean --> Dirty: local edit
+  Dirty --> Clean: Save PUT
+  Clean --> Clean: teammate save auto-applied
+  Dirty --> Conflict: teammate saved while dirty
+  Conflict --> Clean: Save or reload
+```

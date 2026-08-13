@@ -27,7 +27,10 @@ npm run dev
 ```
 
 App: http://localhost:3000  
-Public form (no login): http://localhost:3000/f/product-feedback
+Public form (no login): http://localhost:3000/f/product-feedback  
+Team: http://localhost:3000/team  
+
+Live collab demo: open the same form in two tabs, pick a different teammate in each, Save in one — the other tab shows who is editing and applies the live save.
 
 ## 3. Seeded data (first API start)
 

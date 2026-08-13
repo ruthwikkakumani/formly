@@ -36,7 +36,9 @@ formly/
 │       │   ├── response.py
 │       │   ├── answer.py
 │       │   ├── partial_response.py
-│       │   └── member.py
+│       │   ├── member.py
+│       │   ├── presence.py
+│       │   └── activity.py
 │       ├── schemas/               Pydantic request/response contracts
 │       │   ├── form.py
 │       │   ├── question.py
@@ -51,13 +53,14 @@ formly/
 │       │   ├── validation_service.py
 │       │   ├── webhook_service.py
 │       │   ├── team_service.py
+│       │   ├── collaboration_service.py
 │       │   └── seed.py
 │       └── api/
 │           ├── router.py          mounts route modules
 │           ├── deps.py            shared service instances
 │           └── routes/
 │               ├── health.py
-│               ├── forms.py       creator CRUD, publish, results, CSV
+│               ├── forms.py       creator CRUD, publish, results, CSV, presence, activity
 │               ├── public.py      unauthenticated fill + upload
 │               └── team.py        workspace members
 └── frontend/                      Next.js 15 App Router
@@ -70,13 +73,13 @@ formly/
     ├── components/
     │   ├── layout/                WorkspaceShell, AppHeader
     │   ├── dashboard/             form cards, rename modal
-    │   ├── builder/               canvas, list, settings, logic
+    │   ├── builder/               canvas, list, settings, logic, ActivityLog
     │   ├── results/               table, modal, stats
     │   ├── settings/              theme, thank-you, webhook
     │   ├── respondent/            welcome, question, thank-you
     │   ├── team/                  invite + member list
     │   └── shared/                Toast, Modal, StatusBadge
-    ├── hooks/                     useForms, useBuilder, useRespondent, useToast
+    ├── hooks/                     useForms, useBuilder, useRespondent, useToast, useCurrentUser
     ├── lib/                       api client, types, validation, constants
     └── styles/                    dashboard, builder, respondent, results, settings
 ```

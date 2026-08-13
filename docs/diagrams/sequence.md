@@ -15,14 +15,43 @@ sequenceDiagram
   Dash->>API: POST /forms {title, first question}
   API->>Route: JSON
   Route->>Svc: create()
-  Svc->>DB: INSERT form + question
+  Svc->>DB: INSERT form + question + activity created
   Svc-->>Dash: FormDefinition
   Dash->>Creator: Navigate /builder/{id}
   Creator->>Dash: Edit canvas, drag reorder, Save
   Dash->>API: PUT /forms/{id}
   API->>Svc: update() + sync questions by id
-  Svc->>DB: UPDATE / INSERT / DELETE questions
+  Svc->>DB: UPDATE questions + stamp updated_by + activity saved
   Svc-->>Creator: Saved toast
+```
+
+## 1b. Live editors + live save sync
+
+```mermaid
+sequenceDiagram
+  actor A as Teammate A
+  actor B as Teammate B
+  participant BA as useBuilder A
+  participant BB as useBuilder B
+  participant API as /api/forms/{id}
+  participant Collab as CollaborationService
+  participant DB as SQLite
+
+  loop every 4 seconds
+    BA->>API: POST /presence A
+    BB->>API: POST /presence B
+    API->>Collab: heartbeat
+    Collab->>DB: UPSERT form_presence
+    Collab-->>BA: editors includes B
+    BA-->>A: pill "B editing"
+    BA->>API: GET /forms/{id}
+  end
+  B->>BB: Save
+  BB->>API: PUT form + actor B
+  API->>DB: updated_at, updated_by, form_activity
+  BA->>API: GET /forms/{id}
+  Note over BA: remote updated_at changed and A is not dirty
+  BA-->>A: toast "B just saved" + apply live update
 ```
 
 ## 2. Publish and share
@@ -37,8 +66,8 @@ sequenceDiagram
 
   Creator->>Builder: Publish
   Builder->>API: toggle
-  API->>Svc: status draft → published
-  Svc->>DB: UPDATE forms.status
+  API->>Svc: status draft → published + actor
+  Svc->>DB: UPDATE status, updated_by, activity published
   Svc-->>Builder: slug
   Creator->>Builder: Copy link
   Note over Creator: origin/f/{slug} — no auth

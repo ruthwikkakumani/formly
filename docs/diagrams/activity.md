@@ -11,7 +11,8 @@ flowchart TD
   E --> C
   D -->|No| F[Toggle required / help / logic]
   F --> G[Save]
-  G --> H{Publish?}
+  G --> G2[Stamp updated_by + write form_activity]
+  G2 --> H{Publish?}
   H -->|No| I[Remain draft]
   H -->|Yes| J[status = published]
   J --> K[Copy /f/slug]
@@ -40,4 +41,22 @@ flowchart TD
   K -->|Yes| L[Store answers]
   L --> M[Fire webhook]
   M --> N[Thank-you]
+```
+
+## Two teammates editing the same form
+
+```mermaid
+flowchart TD
+  A[Open builder as member A] --> B[Heartbeat every 4s]
+  C[Open builder as member B] --> D[Heartbeat every 4s]
+  B --> E[GET presence]
+  D --> E
+  E --> F{Other last_seen < 20s?}
+  F -->|Yes| G[Show "X editing"]
+  F -->|No| H[Show Only you]
+  B --> I[Poll GET form]
+  I --> J{updated_at changed?}
+  J -->|No| B
+  J -->|Yes dirty local| K[Toast: teammate saved newer version]
+  J -->|Yes clean local| L[Apply remote form live]
 ```

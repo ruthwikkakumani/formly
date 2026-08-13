@@ -7,20 +7,21 @@ flowchart LR
   subgraph Browser
     Pages[Next.js pages]
     Views[Feature views]
-    Hooks[Hooks]
+    Hooks[Hooks including useCurrentUser]
     Client[lib/api.ts]
     Pages --> Views --> Hooks --> Client
   end
 
   subgraph FastAPI
     Routes[api/routes]
-    Services[services]
+    Services[Form Response Team Collab]
     Repos[repositories]
     Models[SQLAlchemy models]
     Routes --> Services --> Repos --> Models
   end
 
   Client -->|REST JSON /api| Routes
+  Client -->|presence heartbeat 4s| Routes
   Models --> SQLite[(typeform.db)]
   Services -->|optional POST| Webhook[Creator webhook URL]
   Routes -->|/uploads| Disk[uploads/]
