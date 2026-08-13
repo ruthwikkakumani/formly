@@ -18,6 +18,10 @@
   gap: 14px;
 }
 
+.builderhead .brand {
+  flex-shrink: 0;
+}
+
 .titleinput {
   border: 0;
   max-width: 220px;
