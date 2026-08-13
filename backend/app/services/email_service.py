@@ -18,6 +18,9 @@ NOT_CONFIGURED = (
     "Invite emails aren't set up yet. Ask the workspace owner to configure email, then try again."
 )
 SMTP_TIMEOUT = 20
+SMTP_PORTS_BLOCKED = (
+    "Railway cannot reach smtp.gmail.com (SMTP ports 587/465 blocked). Copy the invite link and share it."
+)
 
 
 def deliver_invite_email(invite_id: int, to_email: str, name: str, role: str, accept_url: str) -> None:
@@ -26,7 +29,7 @@ def deliver_invite_email(invite_id: int, to_email: str, name: str, role: str, ac
         ok, message = send_invite_email(to_email, name, role, accept_url)
     except Exception as error:
         _log_exception("Invite email SMTP failed", error)
-        ok, message = False, SEND_FAILED
+        ok, message = False, (_smtp_blocked_message() if _is_network_unreachable(error) else SEND_FAILED)
     _store_invite_email_result(invite_id, ok, message)
 
 
@@ -48,10 +51,10 @@ def send_invite_email(to_email: str, name: str, role: str, accept_url: str) -> t
       <p style="color:#6f6f6c;font-size:13px">Or paste: {accept_url}</p>
     </div>
     """
-    if settings.resend_api_key.strip():
-        return _send_resend(to_email, subject, text, html)
     if settings.smtp_host.strip() and settings.smtp_user.strip():
         return _send_smtp(to_email, subject, text, html)
+    if settings.resend_api_key.strip():
+        return _send_resend(to_email, subject, text, html)
     print(f"Invite email SMTP failed: {NOT_CONFIGURED}", flush=True)
     return False, NOT_CONFIGURED
 
@@ -177,6 +180,12 @@ def _send_smtp(to_email: str, subject: str, text: str, html: str) -> tuple[bool,
         except Exception as error:
             last_error = error
             _log_smtp_error(error, attempt_host, port, mode)
+            if _is_network_unreachable(error):
+                print(
+                    f"Railway cannot reach {attempt_host} (SMTP ports blocked).",
+                    flush=True,
+                )
+                return False, _smtp_blocked_message(attempt_host)
 
     if isinstance(last_error, smtplib.SMTPAuthenticationError):
         return False, AUTH_FAILED
@@ -185,6 +194,34 @@ def _send_smtp(to_email: str, subject: str, text: str, html: str) -> tuple[bool,
     if isinstance(last_error, OSError) and not isinstance(last_error, smtplib.SMTPException):
         return False, UNREACHABLE
     return False, SEND_FAILED
+
+
+def _smtp_blocked_message(host: str = "") -> str:
+    target = (host or settings.smtp_host or "smtp.gmail.com").strip() or "smtp.gmail.com"
+    if target.lower() == "smtp.gmail.com":
+        return SMTP_PORTS_BLOCKED
+    return (
+        f"Railway cannot reach {target} (SMTP ports 587/465 blocked). "
+        "Copy the invite link and share it."
+    )
+
+
+def _is_network_unreachable(error: BaseException | None) -> bool:
+    current: BaseException | None = error
+    seen: set[int] = set()
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        if getattr(current, "errno", None) == 101:
+            return True
+        text = str(current).lower()
+        if "network is unreachable" in text or "[errno 101]" in text:
+            return True
+        reason = getattr(current, "reason", None)
+        if isinstance(reason, BaseException):
+            current = reason
+            continue
+        current = current.__cause__ or current.__context__
+    return False
 
 
 def _log_smtp_error(error: BaseException, host: str, port: int, mode: str) -> None:

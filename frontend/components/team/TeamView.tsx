@@ -70,8 +70,8 @@ export function TeamView() {
           showToast(`Email failed: ${match.email_error}`, "error");
         }
       };
+      window.setTimeout(() => void refreshMailStatus(), 2000);
       window.setTimeout(() => void refreshMailStatus(), 8000);
-      window.setTimeout(() => void refreshMailStatus(), 22000);
     } catch (error) {
       showToast(messageFromUnknown(error, MESSAGES.inviteSendFailed), "error");
       const nextInvites = await load();
