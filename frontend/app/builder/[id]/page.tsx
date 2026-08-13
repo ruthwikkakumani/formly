@@ -1,296 +1,73 @@
 "use client";
-import { useEffect, useState } from "react";
+import { DragEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
-const types = [
-  ["short_text", "Short text"],
-  ["long_text", "Long text"],
-  ["multiple_choice", "Multiple choice"],
-  ["dropdown", "Dropdown"],
-  ["email", "Email"],
-  ["number", "Number"],
-  ["yes_no", "Yes / No"],
-  ["rating", "Rating"],
-];
+const types = [["short_text","Short text"],["long_text","Long text"],["multiple_choice","Multiple choice"],["dropdown","Dropdown"],["email","Email"],["number","Number"],["yes_no","Yes / No"],["rating","Rating"]];
+const defaults = (type = "short_text") => ({ type, title: "Your question here", description: "", required: false, options: ["multiple_choice", "dropdown"].includes(type) ? ["Option 1", "Option 2"] : [] });
+
 export default function Builder() {
   const { id } = useParams<{ id: string }>();
-  const [f, setF] = useState<any>();
+  const [form, setForm] = useState<any>();
   const [selected, setSelected] = useState(0);
   const [tab, setTab] = useState("Build");
+  const [dragged, setDragged] = useState<number | null>(null);
   const [toast, setToast] = useState("");
-  useEffect(() => {
-    fetch(`${API}/forms/${id}`)
-      .then((r) => r.json())
-      .then(setF);
-  }, [id]);
-  if (!f) return <div className="loader">Loading your form…</div>;
-  const q = f.questions[selected];
-  const change = (key: string, val: any) => setF({ ...f, [key]: val });
-  const changeQ = (key: string, val: any) => {
-    const qs = [...f.questions];
-    qs[selected] = { ...q, [key]: val };
-    change("questions", qs);
-  };
-  const add = (type = "short_text") => {
-    const qs = [
-      ...f.questions,
-      {
-        type,
-        title: "Your question here",
-        description: "",
-        required: false,
-        options:
-          type === "multiple_choice" || type === "dropdown"
-            ? ["Option 1", "Option 2"]
-            : [],
-      },
-    ];
-    change("questions", qs);
-    setSelected(qs.length - 1);
-  };
-  const remove = () => {
-    if (f.questions.length === 1) return;
-    const qs = f.questions.filter((_: any, i: number) => i !== selected);
-    change("questions", qs);
-    setSelected(Math.max(0, selected - 1));
-  };
-  const move = (dir: number) => {
-    let to = selected + dir;
-    if (to < 0 || to >= f.questions.length) return;
-    let qs = [...f.questions];
-    [qs[selected], qs[to]] = [qs[to], qs[selected]];
-    change("questions", qs);
-    setSelected(to);
-  };
-  async function save() {
-    const r = await fetch(`${API}/forms/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(f),
-    });
-    setF(await r.json());
-    setToast("All changes saved");
-    setTimeout(() => setToast(""), 2000);
-  }
-  async function publish() {
-    const r = await fetch(`${API}/forms/${id}/publish`, { method: "POST" });
-    setF(await r.json());
-    setToast(f.status === "draft" ? "Your form is live!" : "Form unpublished");
-    setTimeout(() => setToast(""), 2500);
-  }
-  return (
-    <main className="builder">
-      <header className="builderhead">
-        <Link href="/" className="brand">
-          formly<span>•</span>
-        </Link>
-        <input
-          value={f.title}
-          onChange={(e) => change("title", e.target.value)}
-          className="titleinput"
-        />
-        <nav>
-          {["Build", "Results", "Settings"].map((x) => (
-            <button
-              className={tab === x ? "active" : ""}
-              onClick={() => setTab(x)}
-              key={x}
-            >
-              {x}
-            </button>
-          ))}
-        </nav>
-        <button className="save" onClick={save}>
-          Save
-        </button>
-        <button className="primary" onClick={publish}>
-          {f.status === "draft" ? "Publish" : "Unpublish"}
-        </button>
-      </header>
-      {tab === "Build" ? (
-        <div className="buildbody">
-          <aside className="questionlist">
-            <p>CONTENT</p>
-            {f.questions.map((x: any, i: number) => (
-              <button
-                key={i}
-                className={selected === i ? "selected" : ""}
-                onClick={() => setSelected(i)}
-              >
-                <small>{i + 1}</small>
-                <span>{x.title || "Untitled question"}</span>
-              </button>
-            ))}
-            <button className="addline" onClick={() => add()}>
-              ＋ Add question
-            </button>
-          </aside>
-          <section className="editor">
-            <div className="qnumber">
-              QUESTION {selected + 1} OF {f.questions.length}
-            </div>
-            <select
-              value={q.type}
-              onChange={(e) => changeQ("type", e.target.value)}
-            >
-              {types.map((t) => (
-                <option value={t[0]} key={t[0]}>
-                  {t[1]}
-                </option>
-              ))}
-            </select>
-            <textarea
-              className="questiontitle"
-              value={q.title}
-              onChange={(e) => changeQ("title", e.target.value)}
-              placeholder="Type your question"
-            />
-            <textarea
-              className="description"
-              value={q.description}
-              onChange={(e) => changeQ("description", e.target.value)}
-              placeholder="Add a description (optional)"
-            />
-            {["multiple_choice", "dropdown"].includes(q.type) && (
-              <div className="options">
-                {q.options.map((o: string, i: number) => (
-                  <input
-                    key={i}
-                    value={o}
-                    onChange={(e) => {
-                      let a = [...q.options];
-                      a[i] = e.target.value;
-                      changeQ("options", a);
-                    }}
-                  />
-                ))}
-                <button
-                  onClick={() =>
-                    changeQ("options", [
-                      ...q.options,
-                      `Option ${q.options.length + 1}`,
-                    ])
-                  }
-                >
-                  ＋ Add option
-                </button>
-              </div>
-            )}
-            <div className="editbottom">
-              <label className="toggle">
-                <input
-                  type="checkbox"
-                  checked={q.required}
-                  onChange={(e) => changeQ("required", e.target.checked)}
-                />
-                <i /> Required
-              </label>
-              <div>
-                <button onClick={() => move(-1)}>↑</button>
-                <button onClick={() => move(1)}>↓</button>
-                <button className="danger" onClick={remove}>
-                  Delete
-                </button>
-              </div>
-            </div>
-          </section>
-          <aside className="typepicker">
-            <p>ADD A QUESTION</p>
-            {types.map((t) => (
-              <button onClick={() => add(t[0])} key={t[0]}>
-                <b>{t[1][0]}</b>
-                {t[1]}
-              </button>
-            ))}
-          </aside>
-          <section className="preview">
-            <p>LIVE PREVIEW</p>
-            <div className="phone">
-              <small>{selected + 1} →</small>
-              <h3>{q.title}</h3>
-              {q.description && <p>{q.description}</p>}
-              <PreviewInput q={q} />
-              <button>
-                OK <kbd>↵</kbd>
-              </button>
-            </div>
-          </section>
-        </div>
-      ) : (
-        <Results id={id} questions={f.questions} />
-      )}{" "}
-      {toast && <div className="toast">✓ {toast}</div>}
-    </main>
-  );
+  useEffect(() => { fetch(`${API}/forms/${id}`).then(r => r.json()).then(setForm); }, [id]);
+  if (!form) return <div className="loader">Loading your form…</div>;
+  const question = form.questions[selected];
+  const change = (key: string, value: any) => setForm({ ...form, [key]: value });
+  const changeQuestion = (key: string, value: any) => { const questions = [...form.questions]; questions[selected] = { ...question, [key]: value }; change("questions", questions); };
+  const add = (type = "short_text") => { const questions = [...form.questions, defaults(type)]; change("questions", questions); setSelected(questions.length - 1); };
+  const reorder = (from: number, to: number) => { if (from === to) return; const questions = [...form.questions]; const [item] = questions.splice(from, 1); questions.splice(to, 0, item); change("questions", questions); setSelected(to); };
+  const remove = () => { if (form.questions.length === 1) return toastIt("A form needs at least one question"); const questions = form.questions.filter((_: any, index: number) => index !== selected); change("questions", questions); setSelected(Math.max(0, selected - 1)); };
+  const toastIt = (message: string) => { setToast(message); window.setTimeout(() => setToast(""), 2400); };
+  async function save() { const response = await fetch(`${API}/forms/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) }); setForm(await response.json()); toastIt("All changes saved"); }
+  async function publish() { const response = await fetch(`${API}/forms/${id}/publish`, { method: "POST" }); setForm(await response.json()); toastIt(form.status === "draft" ? "Your form is live!" : "Form unpublished"); }
+  async function copyLink() { await navigator.clipboard.writeText(`${window.location.origin}/f/${form.slug}`); toastIt("Share link copied"); }
+  const onDrop = (event: DragEvent, index: number) => { event.preventDefault(); if (dragged !== null) reorder(dragged, index); setDragged(null); };
+
+  return <main className="builder">
+    <header className="builderhead">
+      <Link href="/" className="brand">formly<span>•</span></Link>
+      <input value={form.title} onChange={e => change("title", e.target.value)} className="titleinput" aria-label="Form title" />
+      <nav>{["Build", "Results", "Settings"].map(item => <button className={tab === item ? "active" : ""} onClick={() => setTab(item)} key={item}>{item}</button>)}</nav>
+      <button className="save" onClick={save}>Save</button>
+      {form.status === "published" && <button className="save" onClick={copyLink}>Copy link</button>}
+      <button className="primary" onClick={publish}>{form.status === "draft" ? "Publish" : "Unpublish"}</button>
+    </header>
+    {tab === "Build" && <div className="buildbody">
+      <aside className="questionlist"><p>CONTENT · DRAG TO REORDER</p>
+        {form.questions.map((item: any, index: number) => <button key={index} draggable onDragStart={() => setDragged(index)} onDragOver={event => event.preventDefault()} onDrop={event => onDrop(event, index)} className={selected === index ? "selected" : ""} onClick={() => setSelected(index)}><small>{index + 1}</small><span>{item.title || "Untitled question"}</span><i className="draghandle">⠿</i></button>)}
+        <button className="addline" onClick={() => add()}>＋ Add question</button>
+      </aside>
+      <section className="editor"><div className="qnumber">QUESTION {selected + 1} OF {form.questions.length}</div>
+        <select value={question.type} onChange={e => changeQuestion("type", e.target.value)}>{types.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select>
+        <textarea className="questiontitle" value={question.title} onChange={e => changeQuestion("title", e.target.value)} placeholder="Type your question" />
+        <textarea className="description" value={question.description} onChange={e => changeQuestion("description", e.target.value)} placeholder="Add a description (optional)" />
+        {["multiple_choice", "dropdown"].includes(question.type) && <div className="options">{question.options.map((option: string, index: number) => <input key={index} value={option} aria-label={`Option ${index + 1}`} onChange={e => { const options = [...question.options]; options[index] = e.target.value; changeQuestion("options", options); }} />)}<button onClick={() => changeQuestion("options", [...question.options, `Option ${question.options.length + 1}`])}>＋ Add option</button></div>}
+        <div className="editbottom"><label className="toggle"><input type="checkbox" checked={question.required} onChange={e => changeQuestion("required", e.target.checked)} /> Required</label><div><button onClick={() => reorder(selected, selected - 1)} disabled={selected === 0}>↑</button><button onClick={() => reorder(selected, selected + 1)} disabled={selected === form.questions.length - 1}>↓</button><button className="danger" onClick={remove}>Delete</button></div></div>
+      </section>
+      <aside className="typepicker"><p>ADD A QUESTION</p>{types.map(([value, label]) => <button onClick={() => add(value)} key={value}><b>{label[0]}</b>{label}</button>)}</aside>
+      <section className="preview"><p>LIVE PREVIEW</p><div className="phone"><small>{selected + 1} →</small><h3>{question.title}</h3>{question.description && <p>{question.description}</p>}<PreviewInput question={question} /><button>OK <kbd>↵</kbd></button></div></section>
+    </div>}
+    {tab === "Results" && <Results id={id} questions={form.questions} />}
+    {tab === "Settings" && <Settings form={form} change={change} save={save} />}
+    {toast && <div className="toast">✓ {toast}</div>}
+  </main>;
 }
-function PreviewInput({ q }: any) {
-  if (q.type === "long_text") return <div className="fakeinput multiline" />;
-  if (
-    q.type === "multiple_choice" ||
-    q.type === "dropdown" ||
-    q.type === "yes_no"
-  )
-    return (
-      <div className="choices">
-        {(q.type === "yes_no" ? ["Yes", "No"] : q.options).map(
-          (x: string, i: number) => (
-            <span key={i}>
-              <b>{String.fromCharCode(65 + i)}</b>
-              {x}
-            </span>
-          ),
-        )}
-      </div>
-    );
-  if (q.type === "rating") return <div className="stars">☆ ☆ ☆ ☆ ☆</div>;
-  return <div className="fakeinput" />;
+
+function PreviewInput({ question }: any) { if (question.type === "long_text") return <div className="fakeinput multiline" />; if (["multiple_choice", "dropdown", "yes_no"].includes(question.type)) return <div className="choices">{(question.type === "yes_no" ? ["Yes", "No"] : question.options).map((option: string, index: number) => <span key={option}><b>{String.fromCharCode(65 + index)}</b>{option}</span>)}</div>; if (question.type === "rating") return <div className="stars">☆ ☆ ☆ ☆ ☆</div>; return <div className="fakeinput" />; }
+
+function Settings({ form, change, save }: any) {
+  const theme = form.theme || {};
+  const update = (key: string, value: string) => change("theme", { ...theme, [key]: value });
+  return <section className="settings"><h2>Settings</h2><p>Make this form feel like yours.</p><div className="settingsgrid"><article><h3>Theme</h3><label>Background <input type="color" value={theme.background || "#f7f7f4"} onChange={e => update("background", e.target.value)} /></label><label>Text color <input type="color" value={theme.color || "#262627"} onChange={e => update("color", e.target.value)} /></label><button className="primary" onClick={save}>Save theme</button></article><article><h3>Thank-you screen</h3><textarea value={theme.thankYou || "Your response has been submitted."} onChange={e => update("thankYou", e.target.value)} /><button className="primary" onClick={save}>Save message</button></article></div><div className="coming"><article><b>Logic jumps</b><span>Coming soon</span></article><article><b>Integrations & webhooks</b><span>Coming soon</span></article><article><b>Team collaboration</b><span>Coming soon</span></article><article><b>Payments & file uploads</b><span>Coming soon</span></article></div></section>;
 }
+
 function Results({ id, questions }: { id: string; questions: any[] }) {
-  const [rs, setRs] = useState<any[]>([]);
-  const [stats, setStats] = useState<any[]>([]);
-  useEffect(() => {
-    fetch(`${API}/forms/${id}/responses`)
-      .then((r) => r.json())
-      .then(setRs);
-    fetch(`${API}/forms/${id}/stats`)
-      .then((r) => r.json())
-      .then(setStats);
-  }, [id]);
-  return (
-    <section className="results">
-      <h2>
-        Responses <span>{rs.length}</span>
-      </h2>
-      <div className="stats">
-        {stats.map((s) => (
-          <article key={s.question_id}>
-            <p>{s.title}</p>
-            <b>{s.responses} answers</b>
-            {Object.entries(s.counts).map(([k, v]) => (
-              <small key={k}>
-                {k}: {String(v)}
-              </small>
-            ))}
-          </article>
-        ))}
-      </div>
-      <div className="responseTable">
-        <div className="row header">
-          <span>Submitted</span>
-          {questions.map((q) => (
-            <span key={q.id}>{q.title}</span>
-          ))}
-        </div>
-        {rs.map((r) => (
-          <div className="row" key={r.id}>
-            <span>{new Date(r.submitted_at).toLocaleString()}</span>
-            {questions.map((q) => (
-              <span key={q.id}>{r.answers[q.id] || "—"}</span>
-            ))}
-          </div>
-        ))}
-      </div>
-    </section>
-  );
+  const [responses, setResponses] = useState<any[]>([]); const [stats, setStats] = useState<any[]>([]); const [open, setOpen] = useState<any>();
+  useEffect(() => { fetch(`${API}/forms/${id}/responses`).then(r => r.json()).then(setResponses); fetch(`${API}/forms/${id}/stats`).then(r => r.json()).then(setStats); }, [id]);
+  return <section className="results"><h2>Responses <span>{responses.length}</span></h2><div className="stats">{stats.map(stat => <article key={stat.question_id}><p>{stat.title}</p><b>{stat.responses} answers</b>{Object.entries(stat.counts).map(([key, value]) => <small key={key}>{key}: {String(value)}</small>)}</article>)}</div><div className="responseTable"><div className="row header"><span>Submitted</span>{questions.map(question => <span key={question.id}>{question.title}</span>)}</div>{responses.map(response => <button className="row responseRow" onClick={() => setOpen(response)} key={response.id}><span>{new Date(response.submitted_at).toLocaleString()}</span>{questions.map(question => <span key={question.id}>{response.answers[question.id] || "—"}</span>)}</button>)}</div>{open && <div className="modalback" onClick={() => setOpen(undefined)}><article className="responseModal" onClick={event => event.stopPropagation()}><button className="close" onClick={() => setOpen(undefined)}>×</button><p className="eyebrow">SUBMITTED {new Date(open.submitted_at).toLocaleString()}</p><h2>Response details</h2>{questions.map(question => <div className="answer" key={question.id}><b>{question.title}</b><p>{open.answers[question.id] || "No answer"}</p></div>)}</article></div>}</section>;
 }

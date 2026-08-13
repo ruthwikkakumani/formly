@@ -249,6 +249,9 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.draghandle { margin-left: auto; color: #aaa; font-style: normal; letter-spacing: -2px; }
+.questionlist button[draggable="true"] { cursor: grab; }
+.questionlist button[draggable="true"]:active { cursor: grabbing; }
 .questionlist .addline {
   color: #7446d8;
   margin-top: 6px;
@@ -467,6 +470,16 @@ button {
   border-radius: 8px;
   overflow: auto;
 }
+.responseRow { width: 100%; border: 0; background: #fff; text-align: left; cursor: pointer; }
+.responseRow:hover { background: #f7f4ff; }
+.modalback { position: fixed; inset: 0; background: #0006; display: grid; place-items: center; z-index: 20; padding: 20px; }
+.responseModal { position: relative; width: min(620px, 100%); max-height: 80vh; overflow: auto; background: #fff; border-radius: 12px; padding: 32px; box-shadow: 0 18px 60px #0004; }
+.responseModal h2 { font: 500 30px Fraunces, serif; margin-top: 8px; }
+.close { position: absolute; top: 14px; right: 14px; background: #eee; border-radius: 50%; width: 30px; height: 30px; font-size: 20px; }
+.answer { border-top: 1px solid #e8e8e8; padding: 14px 0; }.answer b { font-size: 13px; }.answer p { margin: 7px 0 0; color: #555; white-space: pre-wrap; }
+.settings { height: calc(100vh - 49px); overflow: auto; padding: 48px max(40px, 10vw); }
+.settings h2 { font: 500 34px Fraunces, serif; margin: 0; }.settings > p { color: #777; }
+.settingsgrid { display: grid; grid-template-columns: repeat(2, minmax(260px, 1fr)); gap: 18px; margin: 28px 0; }.settingsgrid article, .coming article { background: #fff; border: 1px solid #e3e3df; border-radius: 10px; padding: 20px; }.settingsgrid h3 { margin-top: 0; }.settingsgrid label { display: flex; justify-content: space-between; align-items: center; margin: 13px 0; font-size: 14px; }.settingsgrid input { width: 45px; height: 30px; border: 0; padding: 0; }.settingsgrid textarea { width: 100%; min-height: 82px; border: 1px solid #ddd; border-radius: 6px; padding: 9px; resize: vertical; margin-bottom: 12px; }.settingsgrid .primary { font-size: 12px; padding: 9px 13px; }.coming { display: grid; grid-template-columns: repeat(2, minmax(220px, 1fr)); gap: 12px; }.coming article { display: flex; justify-content: space-between; }.coming span { color: #888; font-size: 12px; }
 .row {
   display: grid;
   grid-template-columns: 150px repeat(var(--cols), 180px);
