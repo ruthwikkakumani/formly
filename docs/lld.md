@@ -37,7 +37,7 @@ Public fill never touches creator-only screens. It only calls `/api/public/{slug
 | `InviteService` | pending email invites + accept URL; create/list/revoke are owner-only; accept creates a real account |
 | `email_service` | SMTP (or Resend) invite and reset mail off the request thread; invite copy link still works if SMTP is blocked |
 | `CollaborationService` | presence heartbeat, leave (DELETE row), active editors, activity log |
-| `seed.py` | two published forms + one draft + sample responses; `seed_reviewer_if_missing` creates `reviewer@formly.dev` / `FormlyReview1` as `editor` if absent |
+| `seed.py` | two published forms + one draft + sample responses; demo members from env (`OWNER_*`, `REVIEWER_*`, `VIEWER_*`) |
 
 **Question sync rule:** `PUT /api/forms/{id}` does **not** delete-all-and-recreate. Existing question IDs are updated in place so historical `answers.question_id` stay valid.
 
@@ -107,7 +107,8 @@ Respondent steps: `loading → welcome → question* → thanks | error`. A refr
 
 | Method | Path | Use |
 |---|---|---|
-| POST | `/api/auth/register` | first **owner** account; 403 if an owner already exists (seeded reviewer is editor, so register still works) |
+| GET | `/api/auth/demo` | seeded demo logins from env (owner / reviewer / viewer) for the sign-in page |
+| POST | `/api/auth/register` | first **owner** account; 403 if an owner already exists |
 | POST | `/api/auth/login` | email + password → token |
 | GET | `/api/auth/me` | current user |
 | PATCH | `/api/auth/me` | update display name |

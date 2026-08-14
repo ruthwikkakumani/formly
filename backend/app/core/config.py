@@ -47,9 +47,13 @@ class Settings(BaseSettings):
     smtp_user: str = ""
     smtp_password: str = ""
     smtp_from: str = ""
-    # Assignment reviewer: created on startup if missing. Not the workspace owner.
+    # Demo accounts: seeded on boot when email + password are set in env (not hardcoded).
     reviewer_email: str = "reviewer@formly.dev"
     reviewer_password: str = "FormlyReview1"
+    owner_email: str = ""
+    owner_password: str = ""
+    viewer_email: str = ""
+    viewer_password: str = ""
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @field_validator(
@@ -65,6 +69,10 @@ class Settings(BaseSettings):
         "invite_from_email",
         "reviewer_email",
         "reviewer_password",
+        "owner_email",
+        "owner_password",
+        "viewer_email",
+        "viewer_password",
         mode="before",
     )
     @classmethod

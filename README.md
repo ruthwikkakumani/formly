@@ -133,7 +133,7 @@ Builder, CRUD, publish/share, conversational fill (keyboard + progress + validat
 
 **Auth.** First `/register` creates the owner (a seeded reviewer editor does not block that). After that, new people join only by accepting an invite. Public `/f/{slug}` stays open with no login. Forgot password is `/forgot-password`; the emailed link opens `/reset/{token}`.
 
-**Reviewer login.** Graders sign in at `/login` with `reviewer@formly.dev` / `FormlyReview1` (shown on the page, with a fill button). Role is `editor`: can save and publish forms; **cannot** invite or remove teammates. Not the owner’s Gmail. Override with `REVIEWER_EMAIL` / `REVIEWER_PASSWORD` (API seed) and `NEXT_PUBLIC_REVIEWER_EMAIL` / `NEXT_PUBLIC_REVIEWER_PASSWORD` (login page).
+**Reviewer login.** Graders sign in at `/login`. Demo accounts are seeded from env (`OWNER_*`, `REVIEWER_*`, `VIEWER_*`) and listed on the page via `GET /api/auth/demo` — they are not hardcoded in the frontend. Default reviewer: `reviewer@formly.dev` / `FormlyReview1` (editor).
 
 **Roles.** `owner` — full access including invites and role changes. `editor` — create/edit/publish forms; no team admin. `viewer` — read-only on forms (list, builder, results). The owner can switch a teammate between viewer and editor.
 

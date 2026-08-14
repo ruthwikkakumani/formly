@@ -29,7 +29,7 @@ npm run dev
 ```
 
 App: http://localhost:3000  
-Login (reviewer demo): http://localhost:3000/login — `reviewer@formly.dev` / `FormlyReview1` (editor: can edit forms, cannot invite/remove; override via `REVIEWER_*` and `NEXT_PUBLIC_REVIEWER_*`)  
+Login (demo accounts from API): http://localhost:3000/login — reviewer default `reviewer@formly.dev` / `FormlyReview1`. Owner and viewer appear only if `OWNER_*` / `VIEWER_*` are set on the API.  
 Register (first owner): http://localhost:3000/register  
 Forgot password: http://localhost:3000/forgot-password  
 Public form (no login): http://localhost:3000/f/product-feedback  
@@ -118,6 +118,10 @@ SMTP_PASSWORD=your-16-char-app-password
 SMTP_FROM=you@gmail.com
 REVIEWER_EMAIL=reviewer@formly.dev
 REVIEWER_PASSWORD=FormlyReview1
+OWNER_EMAIL=
+OWNER_PASSWORD=
+VIEWER_EMAIL=viewer@formly.dev
+VIEWER_PASSWORD=FormlyView1
 ```
 
 `DATABASE_URL` needs **four** slashes (`sqlite:////data/...`) so SQLite opens the absolute path `/data/typeform.db`. Gmail app password must have no spaces. `SMTP_FROM` can be omitted (defaults to `SMTP_USER`). Invite emails are a branded HTML table (Gmail-safe) plus a plaintext fallback.

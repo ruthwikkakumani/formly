@@ -160,6 +160,8 @@ export const inviteApi = {
 };
 
 export const authApi = {
+  demo: () =>
+    request<{ role: string; label: string; email: string; password: string }[]>("/auth/demo"),
   register: (body: { name: string; email: string; password: string }) =>
     request<{ token: string; user: WorkspaceMember }>("/auth/register", json("POST", body)),
   login: (body: { email: string; password: string }) =>

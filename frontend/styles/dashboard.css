@@ -866,8 +866,8 @@
 
 .invite-page {
   max-width: 520px;
-  margin: 12vh auto;
-  padding: 0 24px 80px;
+  margin: 6vh auto 0;
+  padding: 0 24px 40px;
 }
 
 .invite-page h1 {
@@ -881,17 +881,80 @@
 }
 
 .reviewer-note {
-  margin: 4px 0 28px;
-  padding: 18px 20px;
+  margin: 4px 0 20px;
+  padding: 14px 16px 16px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface);
 }
 
-.reviewer-note h2 {
-  font: 500 20px Fraunces, serif;
-  color: var(--ink);
+.demo-nav {
+  position: relative;
+  display: flex;
+  width: 100%;
+  gap: 2px;
   margin: 0 0 14px;
+  padding: 3px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.demo-nav-thumb {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: var(--ink);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.demo-nav-label {
+  position: relative;
+  z-index: 1;
+}
+
+.demo-nav button {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.demo-nav button:hover {
+  color: var(--ink);
+}
+
+.demo-nav.has-thumb button.tabon,
+.demo-nav.has-thumb button.tabon:hover {
+  background: transparent;
+  color: #fff;
+}
+
+.demo-switch {
+  position: relative;
+  overflow: hidden;
+}
+
+.demo-pane {
+  width: 100%;
+}
+
+.demo-pane.is-off {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.demo-pane.is-on {
+  position: relative;
+  z-index: 1;
 }
 
 .reviewer-note dl {

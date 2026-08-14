@@ -6,26 +6,49 @@ from app.core.security import hash_password
 from app.models import Answer, Form, Member, Question, Response
 
 
-def seed_reviewer_if_missing(db: Session) -> None:
-    email = (settings.reviewer_email or "").strip().lower()
-    password = settings.reviewer_password or ""
+def seed_account(db: Session, *, email: str, password: str, role: str, name: str) -> None:
+    email = (email or "").strip().lower()
+    password = password or ""
     if not email or len(password) < 8:
         return
-    if db.query(Member).filter(Member.email == email).first():
-        return
-    db.add(
-        Member(
-            name="Reviewer",
-            email=email,
-            role="editor",
-            password_hash=hash_password(password),
-        )
-    )
+    member = db.query(Member).filter(Member.email == email).first()
+    hashed = hash_password(password)
+    if member:
+        member.password_hash = hashed
+        member.role = role
+        if not (member.name or "").strip():
+            member.name = name
+    else:
+        db.add(Member(name=name, email=email, role=role, password_hash=hashed))
     db.commit()
 
 
+def seed_demo_accounts(db: Session) -> None:
+    seed_account(
+        db,
+        email=settings.owner_email,
+        password=settings.owner_password,
+        role="owner",
+        name="Owner",
+    )
+    seed_account(
+        db,
+        email=settings.reviewer_email,
+        password=settings.reviewer_password,
+        role="editor",
+        name="Reviewer",
+    )
+    seed_account(
+        db,
+        email=settings.viewer_email,
+        password=settings.viewer_password,
+        role="viewer",
+        name="Viewer",
+    )
+
+
 def seed_database(db: Session) -> None:
-    seed_reviewer_if_missing(db)
+    seed_demo_accounts(db)
     if db.query(Form).first():
         return
 

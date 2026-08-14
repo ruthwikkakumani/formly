@@ -22,6 +22,26 @@ FORGOT_MESSAGE = "If that email is in this workspace, we've sent a reset link. C
 
 
 class AuthService:
+    def demo_accounts(self) -> list[dict]:
+        rows = []
+        for role, label, email, password in (
+            ("owner", "Owner", settings.owner_email, settings.owner_password),
+            ("editor", "Reviewer", settings.reviewer_email, settings.reviewer_password),
+            ("viewer", "Viewer", settings.viewer_email, settings.viewer_password),
+        ):
+            clean_email = (email or "").strip().lower()
+            clean_password = password or ""
+            if clean_email and len(clean_password) >= 8:
+                rows.append(
+                    {
+                        "role": role,
+                        "label": label,
+                        "email": clean_email,
+                        "password": clean_password,
+                    }
+                )
+        return rows
+
     def session(self, member: Member) -> dict:
         return {
             "token": create_token(member.id, member.email),

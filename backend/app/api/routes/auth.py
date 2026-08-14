@@ -19,6 +19,11 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 service = AuthService()
 
 
+@router.get("/demo")
+def demo_accounts():
+    return service.demo_accounts()
+
+
 @router.post("/register")
 def register(payload: RegisterPayload, db: Session = Depends(get_db)):
     return service.register(db, payload)
