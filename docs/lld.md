@@ -26,11 +26,14 @@ Public fill never touches creator-only screens. It only calls `/api/public/{slug
 
 ## 3. Backend modules
 
+Layered flow: **route → service → repository → SQLite**. Routes own HTTP only. Services own rules. Repositories own SQL.
+
 | Module | Responsibility |
 |---|---|
+| `FormRepository` / `ResponseRepository` / `MemberRepository` / `InviteRepository` / `PasswordResetRepository` / `CollaborationRepository` | SQLAlchemy queries and persist helpers |
 | `FormService` | create, update (sync questions by id), rename, duplicate, publish toggle, stamp `updated_by`, serialize |
-| `ResponseService` | submit, partial save/load, combined results, stats, CSV rows, file upload |
-| `validation_service` | required / email / number / choice / payment; logic-jump path walk |
+| `ResponseService` | submit, partial save/load, combined results, stats, CSV export, file upload |
+| `validation_service` | required / email / number / choice / payment via a type→validator map; logic-jump path walk |
 | `webhook_service` | fire-and-forget POST on submit |
 | `AuthService` | register (first **owner** only; later registers 403 — seeded reviewer does not count as owner), login, JWT, profile/password, forgot + reset token |
 | `TeamService` | list members; update role viewer ↔ editor (owner only); remove (owner only — cannot remove the owner) |
@@ -38,6 +41,7 @@ Public fill never touches creator-only screens. It only calls `/api/public/{slug
 | `email_service` | SMTP (or Resend) invite and reset mail off the request thread; invite copy link still works if SMTP is blocked |
 | `CollaborationService` | presence heartbeat, leave (DELETE row), active editors, activity log |
 | `seed.py` | two published forms + one draft + sample responses; demo members from env (`OWNER_*`, `REVIEWER_*`, `VIEWER_*`) |
+| `AppError` | domain errors; `main.py` maps them to `{ "detail": ... }` HTTP responses |
 
 **Question sync rule:** `PUT /api/forms/{id}` does **not** delete-all-and-recreate. Existing question IDs are updated in place so historical `answers.question_id` stay valid.
 

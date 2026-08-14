@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session, joinedload
 
-from app.models import Form
+from app.core.constants import FORM_STATUS_PUBLISHED
+from app.models import Form, Question
 
 
 class FormRepository:
@@ -27,7 +28,7 @@ class FormRepository:
         return (
             db.query(Form)
             .options(joinedload(Form.questions), joinedload(Form.responses))
-            .filter(Form.slug == slug, Form.status == "published")
+            .filter(Form.slug == slug, Form.status == FORM_STATUS_PUBLISHED)
             .first()
         )
 
@@ -38,3 +39,20 @@ class FormRepository:
             .order_by(Form.updated_at.desc())
             .all()
         )
+
+    def has_any(self, db: Session) -> bool:
+        return db.query(Form.id).first() is not None
+
+    def add(self, db: Session, form: Form) -> Form:
+        db.add(form)
+        db.flush()
+        return form
+
+    def delete(self, db: Session, form: Form) -> None:
+        db.delete(form)
+
+    def add_question(self, db: Session, question: Question) -> None:
+        db.add(question)
+
+    def delete_question(self, db: Session, question: Question) -> None:
+        db.delete(question)

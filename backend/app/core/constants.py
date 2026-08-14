@@ -1,3 +1,15 @@
+ROLE_OWNER = "owner"
+ROLE_EDITOR = "editor"
+ROLE_VIEWER = "viewer"
+ASSIGNABLE_ROLES = frozenset({ROLE_EDITOR, ROLE_VIEWER})
+INVITE_ROLES = ASSIGNABLE_ROLES
+INVITE_PENDING = "pending"
+INVITE_ACCEPTED = "accepted"
+INVITE_REVOKED = "revoked"
+INVITE_EXPIRED = "expired"
+FORM_STATUS_DRAFT = "draft"
+FORM_STATUS_PUBLISHED = "published"
+
 QUESTION_TYPES = (
     "short_text",
     "long_text",

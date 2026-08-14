@@ -59,11 +59,11 @@ formly/
 ├── backend/
 │   ├── main.py           app composition root
 │   └── app/
-│       ├── core/         config, constants
-│       ├── db/           engine, session
+│       ├── core/         config, constants, security, AppError
+│       ├── db/           engine, session, SQLite column patches
 │       ├── models/       Form, Question, Response, Answer, Partial, Member, Invite, Presence, Activity, PasswordReset
 │       ├── schemas/      Pydantic DTOs
-│       ├── repositories/ SQL access
+│       ├── repositories/ SQL access (forms, responses, members, invites, resets, collaboration)
 │       ├── services/     rules, auth, invites, email, seed, webhooks, collaboration
 │       └── api/routes/   auth, forms, public, team, invites, health
 └── frontend/

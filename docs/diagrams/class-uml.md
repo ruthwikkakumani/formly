@@ -107,11 +107,25 @@ classDiagram
     +get(db, id)
     +get_public(db, slug)
     +list(db)
+    +add(db, form)
   }
   class ResponseRepository {
     +list_for_form(db, id)
     +get_partial(db, visitor_id)
     +count_partials(db, form_id)
+  }
+  class MemberRepository {
+    +get(db, id)
+    +get_by_email(db, email)
+    +list(db)
+  }
+  class InviteRepository {
+    +get_by_token(db, token)
+    +list_pending(db)
+  }
+  class CollaborationRepository {
+    +get_presence(db, form_id, email)
+    +list_activity(db, form_id)
   }
   class FormService {
     +serialize(form)
@@ -135,10 +149,12 @@ classDiagram
     +load_partial(db, slug, visitor_id)
     +stats(db, form_id)
     +results(db, form_id)
+    +export_csv(db, form_id)
     +store_upload(db, slug, file)
   }
   class TeamService {
     +list(db)
+    +update_role(db, id, role)
     +remove(db, id)
   }
   class AuthService {
@@ -158,8 +174,12 @@ classDiagram
   }
   FormService --> FormRepository
   FormService --> CollaborationService
+  CollaborationService --> CollaborationRepository
   ResponseService --> FormService
   ResponseService --> ResponseRepository
+  AuthService --> MemberRepository
+  TeamService --> MemberRepository
+  InviteService --> InviteRepository
   InviteService --> AuthService
 ```
 

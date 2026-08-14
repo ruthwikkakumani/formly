@@ -4,9 +4,9 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 import jwt
-from fastapi import HTTPException
 
 from app.core.config import settings
+from app.core.exceptions import AppError
 
 
 def hash_password(password: str) -> str:
@@ -36,4 +36,4 @@ def read_token(token: str) -> dict:
     try:
         return jwt.decode(token, settings.auth_secret, algorithms=["HS256"])
     except jwt.PyJWTError as error:
-        raise HTTPException(status_code=401, detail="Your session expired. Sign in again.") from error
+        raise AppError(401, "Your session expired. Sign in again.") from error

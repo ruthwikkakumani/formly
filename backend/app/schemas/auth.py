@@ -1,5 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from app.schemas.member import MemberRead
+
 
 class RegisterPayload(BaseModel):
     name: str = Field(min_length=1, max_length=120)
@@ -39,3 +41,15 @@ class ProfileUpdatePayload(BaseModel):
 class ChangePasswordPayload(BaseModel):
     current_password: str = Field(min_length=1, max_length=120)
     new_password: str = Field(min_length=8, max_length=120)
+
+
+class DemoAccountRead(BaseModel):
+    role: str
+    label: str
+    email: str
+    password: str
+
+
+class SessionRead(BaseModel):
+    token: str
+    user: MemberRead

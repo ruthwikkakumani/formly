@@ -1,6 +1,10 @@
 import re
 
-from pydantic import BaseModel, Field, field_validator
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.core.constants import ASSIGNABLE_ROLES
 
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
@@ -34,7 +38,7 @@ class RoleUpdatePayload(BaseModel):
     @classmethod
     def require_assignable_role(cls, value: str) -> str:
         role = value.strip().lower()
-        if role not in {"editor", "viewer"}:
+        if role not in ASSIGNABLE_ROLES:
             raise ValueError("Role must be editor or viewer.")
         return role
 
@@ -44,3 +48,22 @@ class MemberRead(BaseModel):
     name: str
     email: str
     role: str
+    created_at: datetime | None = None
+    model_config = ConfigDict(from_attributes=True)
+
+    @classmethod
+    def dump(cls, member) -> dict:
+        return cls.model_validate(member).model_dump()
+
+
+class InviteRead(BaseModel):
+    id: int
+    email: str
+    name: str
+    role: str
+    status: str
+    created_at: datetime
+    expires_at: datetime
+    email_error: str | None = None
+    accept_url: str | None = None
+    model_config = ConfigDict(from_attributes=True)

@@ -289,11 +289,12 @@ def _invite_email_html(name: str, role_phrase: str, accept_url: str) -> str:
 
 def _store_invite_email_result(invite_id: int, ok: bool, message: str) -> None:
     from app.db.session import SessionLocal
-    from app.models.invite import WorkspaceInvite
+    from app.repositories.invite_repository import InviteRepository
 
     db = SessionLocal()
+    repo = InviteRepository()
     try:
-        invite = db.query(WorkspaceInvite).filter(WorkspaceInvite.id == invite_id).first()
+        invite = repo.get(db, invite_id)
         if not invite:
             print(f"Invite email result skipped missing invite_id={invite_id}", flush=True)
             return

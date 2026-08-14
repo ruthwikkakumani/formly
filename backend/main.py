@@ -2,55 +2,26 @@
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import inspect, text
 
 from app.api.router import api_router
 from app.core.config import settings
+from app.core.exceptions import AppError
 from app.db.base import Base
+from app.db.migrate import ensure_sqlite_columns
 from app.db.session import SessionLocal, engine
 from app.models import Answer, Form, FormActivity, FormPresence, Member, PartialResponse, PasswordReset, Question, Response, WorkspaceInvite  # noqa: F401
 from app.services.seed import seed_database
-
-
-def _ensure_sqlite_columns() -> None:
-    inspector = inspect(engine)
-    tables = inspector.get_table_names()
-    if "questions" in tables:
-        columns = {column["name"] for column in inspector.get_columns("questions")}
-        if "logic" not in columns:
-            with engine.begin() as connection:
-                connection.execute(text("ALTER TABLE questions ADD COLUMN logic JSON DEFAULT '{}'"))
-    if "forms" in tables:
-        form_columns = {column["name"] for column in inspector.get_columns("forms")}
-        if "webhook_url" not in form_columns:
-            with engine.begin() as connection:
-                connection.execute(text("ALTER TABLE forms ADD COLUMN webhook_url VARCHAR(500) DEFAULT ''"))
-        if "updated_by" not in form_columns:
-            with engine.begin() as connection:
-                connection.execute(text("ALTER TABLE forms ADD COLUMN updated_by VARCHAR(120) DEFAULT ''"))
-        if "updated_by_email" not in form_columns:
-            with engine.begin() as connection:
-                connection.execute(text("ALTER TABLE forms ADD COLUMN updated_by_email VARCHAR(180) DEFAULT ''"))
-    if "workspace_members" in tables:
-        member_columns = {column["name"] for column in inspector.get_columns("workspace_members")}
-        if "password_hash" not in member_columns:
-            with engine.begin() as connection:
-                connection.execute(text("ALTER TABLE workspace_members ADD COLUMN password_hash VARCHAR(200) DEFAULT ''"))
-    if "workspace_invites" in tables:
-        invite_columns = {column["name"] for column in inspector.get_columns("workspace_invites")}
-        if "email_error" not in invite_columns:
-            with engine.begin() as connection:
-                connection.execute(text("ALTER TABLE workspace_invites ADD COLUMN email_error TEXT"))
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     settings.upload_dir.mkdir(parents=True, exist_ok=True)
     Base.metadata.create_all(engine)
-    _ensure_sqlite_columns()
+    ensure_sqlite_columns(engine)
     db = SessionLocal()
     try:
         seed_database(db)
@@ -71,3 +42,8 @@ app.add_middleware(
 settings.upload_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads")
 app.include_router(api_router, prefix=settings.api_prefix)
+
+
+@app.exception_handler(AppError)
+async def handle_app_error(_: Request, error: AppError) -> JSONResponse:
+    return JSONResponse(status_code=error.status_code, content={"detail": error.detail})

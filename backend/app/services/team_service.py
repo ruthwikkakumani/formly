@@ -1,52 +1,40 @@
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.constants import ASSIGNABLE_ROLES, ROLE_OWNER
+from app.core.exceptions import AppError
 from app.models import Member
-from app.schemas.member import MemberPayload
+from app.repositories.member_repository import MemberRepository
+from app.schemas.member import MemberRead
 
 
 class TeamService:
+    def __init__(self, members: MemberRepository | None = None) -> None:
+        self.members = members or MemberRepository()
+
     def serialize(self, member: Member) -> dict:
-        return {
-            "id": member.id,
-            "name": member.name,
-            "email": member.email,
-            "role": member.role,
-            "created_at": member.created_at,
-        }
+        return MemberRead.dump(member)
 
     def list(self, db: Session) -> list[dict]:
-        members = db.query(Member).order_by(Member.created_at.asc()).all()
-        return [self.serialize(member) for member in members]
-
-    def invite(self, db: Session, payload: MemberPayload) -> dict:
-        role = payload.role if payload.role in {"owner", "editor", "viewer"} else "editor"
-        if db.query(Member).filter(Member.email == str(payload.email).lower()).first():
-            raise HTTPException(status_code=409, detail="That person is already in this workspace.")
-        member = Member(name=payload.name.strip(), email=str(payload.email).lower(), role=role)
-        db.add(member)
-        db.commit()
-        db.refresh(member)
-        return self.serialize(member)
+        return [self.serialize(member) for member in self.members.list(db)]
 
     def update_role(self, db: Session, member_id: int, role: str) -> dict:
-        member = db.query(Member).filter(Member.id == member_id).first()
+        member = self.members.get(db, member_id)
         if not member:
-            raise HTTPException(status_code=404, detail="We couldn't find that teammate.")
-        if member.role == "owner":
-            raise HTTPException(status_code=400, detail="The workspace owner's role cannot be changed.")
-        if role not in {"editor", "viewer"}:
-            raise HTTPException(status_code=400, detail="Role must be editor or viewer.")
+            raise AppError(404, "We couldn't find that teammate.")
+        if member.role == ROLE_OWNER:
+            raise AppError(400, "The workspace owner's role cannot be changed.")
+        if role not in ASSIGNABLE_ROLES:
+            raise AppError(400, "Role must be editor or viewer.")
         member.role = role
         db.commit()
         db.refresh(member)
         return self.serialize(member)
 
     def remove(self, db: Session, member_id: int) -> None:
-        member = db.query(Member).filter(Member.id == member_id).first()
+        member = self.members.get(db, member_id)
         if not member:
-            raise HTTPException(status_code=404, detail="We couldn't find that teammate.")
-        if member.role == "owner":
-            raise HTTPException(status_code=400, detail="The workspace owner cannot be removed.")
-        db.delete(member)
+            raise AppError(404, "We couldn't find that teammate.")
+        if member.role == ROLE_OWNER:
+            raise AppError(400, "The workspace owner cannot be removed.")
+        self.members.delete(db, member)
         db.commit()

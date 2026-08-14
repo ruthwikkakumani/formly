@@ -1,23 +1,17 @@
-import csv
-import io
-
 from fastapi import APIRouter, Body, Depends, Response
 from sqlalchemy.orm import Session
 
-from app.api.deps import form_service, get_current_user, require_editor, response_service
+from app.api.deps import collab_service, form_service, get_current_user, require_editor, response_service
 from app.db.session import get_db
 from app.models import Member
 from app.schemas.form import ActorActionPayload, FormPayload, PresencePayload, RenamePayload
-from app.services.collaboration_service import CollaborationService
-
-collab = CollaborationService()
 
 router = APIRouter(prefix="/forms", tags=["forms"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("")
 def list_forms(db: Session = Depends(get_db)):
-    return [form_service.serialize(form) for form in form_service.repo.list(db)]
+    return form_service.list(db)
 
 
 @router.post("")
@@ -70,25 +64,25 @@ def heartbeat(form_id: int, payload: PresencePayload, db: Session = Depends(get_
     form_service.require(db, form_id)
     email = (user.email or payload.actor_email or "").strip()
     name = (user.name or payload.actor_name or "").strip()
-    return collab.heartbeat(db, form_id, name, email)
+    return collab_service.heartbeat(db, form_id, name, email)
 
 
 @router.delete("/{form_id}/presence")
 def leave_presence(form_id: int, db: Session = Depends(get_db), user: Member = Depends(get_current_user)):
     form_service.require(db, form_id)
-    return collab.leave(db, form_id, user.name, user.email)
+    return collab_service.leave(db, form_id, user.name, user.email)
 
 
 @router.get("/{form_id}/presence")
 def list_editors(form_id: int, db: Session = Depends(get_db)):
     form_service.require(db, form_id)
-    return collab.active_editors(db, form_id)
+    return collab_service.active_editors(db, form_id)
 
 
 @router.get("/{form_id}/activity")
 def form_activity(form_id: int, db: Session = Depends(get_db)):
     form_service.require(db, form_id)
-    return collab.history(db, form_id)
+    return collab_service.history(db, form_id)
 
 
 @router.get("/{form_id}/responses")
@@ -108,17 +102,9 @@ def form_results(form_id: int, db: Session = Depends(get_db)):
 
 @router.get("/{form_id}/responses.csv")
 def export_csv(form_id: int, db: Session = Depends(get_db)):
-    form = form_service.require(db, form_id)
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["submitted_at", *[question.title for question in form.questions]])
-    for response in response_service.repo.list_for_form(db, form_id):
-        answers = {answer.question_id: answer.value for answer in response.answers}
-        writer.writerow(
-            [response.submitted_at.isoformat(), *[answers.get(question.id, "") for question in form.questions]]
-        )
+    content, filename = response_service.export_csv(db, form_id)
     return Response(
-        output.getvalue(),
+        content,
         media_type="text/csv",
-        headers={"Content-Disposition": f'attachment; filename="form-{form_id}-responses.csv"'},
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

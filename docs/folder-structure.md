@@ -24,13 +24,15 @@ formly/
 │   ├── render.yaml
 │   ├── .env.example               REVIEWER_EMAIL / REVIEWER_PASSWORD
 │   └── app/
-│       ├── core/                  settings, security, constants
+│       ├── core/                  settings, security, constants, AppError
 │       │   ├── config.py
 │       │   ├── security.py
-│       │   └── constants.py
-│       ├── db/                    engine, session, declarative Base
+│       │   ├── constants.py
+│       │   └── exceptions.py
+│       ├── db/                    engine, session, declarative Base, SQLite column patches
 │       │   ├── base.py
-│       │   └── session.py
+│       │   ├── session.py
+│       │   └── migrate.py
 │       ├── models/                SQLAlchemy tables
 │       │   ├── form.py
 │       │   ├── question.py
@@ -50,7 +52,11 @@ formly/
 │       │   └── member.py
 │       ├── repositories/          SQL only
 │       │   ├── form_repository.py
-│       │   └── response_repository.py
+│       │   ├── response_repository.py
+│       │   ├── member_repository.py
+│       │   ├── invite_repository.py
+│       │   ├── password_reset_repository.py
+│       │   └── collaboration_repository.py
 │       ├── services/              business rules
 │       │   ├── form_service.py
 │       │   ├── response_service.py
@@ -64,7 +70,7 @@ formly/
 │       │   └── seed.py            forms + sample responses + reviewer editor if missing
 │       └── api/
 │           ├── router.py          mounts route modules
-│           ├── deps.py            JWT current user
+│           ├── deps.py            JWT current user + service composition root
 │           └── routes/
 │               ├── health.py
 │               ├── auth.py        register / login / me / password / forgot / reset
@@ -109,8 +115,9 @@ formly/
 | `lib/access.ts` | `isOwner()`, `isViewer()`, `canEditForms()` | HTTP |
 | `lib/fillDraft.ts` | localStorage resume (visitor id, answers, index) | HTTP |
 | `lib/templates.ts` | starter-kit payloads | HTTP |
-| `api/routes` | HTTP status + wiring | SQL queries |
-| `services/` | validation, publish, submit, webhooks, invites | FastAPI `Request` objects |
+| `api/routes` | HTTP status + wiring | SQL queries, business rules |
+| `services/` | validation, publish, submit, webhooks, invites | FastAPI `Request` objects, raw SQL |
 | `repositories/` | SQLAlchemy queries | HTTP / validation messages |
 | `models/` | tables + relationships | API JSON shape |
 | `schemas/` | request/response DTOs | database sessions |
+| `core/exceptions` | `AppError` domain errors | HTTP response formatting |

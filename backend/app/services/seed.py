@@ -4,6 +4,11 @@ from app.core.config import settings
 from app.core.constants import THEME_DEFAULTS
 from app.core.security import hash_password
 from app.models import Answer, Form, Member, Question, Response
+from app.repositories.form_repository import FormRepository
+from app.repositories.member_repository import MemberRepository
+
+_members = MemberRepository()
+_forms = FormRepository()
 
 
 def seed_account(db: Session, *, email: str, password: str, role: str, name: str) -> None:
@@ -11,7 +16,7 @@ def seed_account(db: Session, *, email: str, password: str, role: str, name: str
     password = password or ""
     if not email or len(password) < 8:
         return
-    member = db.query(Member).filter(Member.email == email).first()
+    member = _members.get_by_email(db, email)
     hashed = hash_password(password)
     if member:
         member.password_hash = hashed
@@ -19,7 +24,7 @@ def seed_account(db: Session, *, email: str, password: str, role: str, name: str
         if not (member.name or "").strip():
             member.name = name
     else:
-        db.add(Member(name=name, email=email, role=role, password_hash=hashed))
+        _members.add(db, Member(name=name, email=email, role=role, password_hash=hashed))
     db.commit()
 
 
@@ -49,7 +54,7 @@ def seed_demo_accounts(db: Session) -> None:
 
 def seed_database(db: Session) -> None:
     seed_demo_accounts(db)
-    if db.query(Form).first():
+    if _forms.has_any(db):
         return
 
     feedback = Form(
